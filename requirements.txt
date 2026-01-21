@@ -1,0 +1,33 @@
+# Dependencias base do projeto
+# Adicione outras dependencias conforme necessario
+
+# Interface
+streamlit>=1.52.0
+
+# Manipulacao de dados
+pandas>=2.0.0
+
+# Testes
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Banco de dados (SQLite ja vem com Python)
+# Nenhuma dependencia adicional necessaria
+
+# Deteccao de encoding (sugestao)
+chardet>=5.2.0
+
+# Validacao de schemas (sugestao)
+pydantic>=2.5.0
+
+# Cliente HTTP para APIs de IA (se usar OpenAI/Anthropic)
+httpx>=0.25.0
+
+# OpenAI (opcional - se escolher usar)
+# openai>=2.15.0
+
+# Anthropic (opcional - se escolher usar)
+# anthropic>=0.76.0
+
+# Google Gemini (opcional - se escolher usar)
+# google-genai>=1.57.0
