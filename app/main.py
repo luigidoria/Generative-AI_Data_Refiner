@@ -67,7 +67,7 @@ with container:
                 template_validacao = json.load(f)
             
             resultado_validacao = validar_csv_completo(tmp_path, template_validacao)
-            print(resultado_validacao)
+
             st.divider()
             st.subheader("Estatísticas do Arquivo")
 
