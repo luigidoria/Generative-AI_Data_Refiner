@@ -24,7 +24,7 @@ pydantic>=2.5.0
 httpx>=0.25.0
 
 # OpenAI (opcional - se escolher usar)
-# openai>=2.15.0
+openai>=2.15.0
 
 # Anthropic (opcional - se escolher usar)
 # anthropic>=0.76.0
