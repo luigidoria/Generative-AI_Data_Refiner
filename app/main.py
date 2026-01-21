@@ -20,3 +20,9 @@ with st.sidebar:
     3. A IA corrige erros automaticamente.
     4. Dados corrigidos são inseridos no banco.
     """)
+
+container = st.container(border=True)
+with container:
+    st.markdown("### Upload de Arquivos")
+    st.info("Faça o upload dos seus arquivos financeiros (CSV) para validação e correção automática via IA.")
+    st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed")
