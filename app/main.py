@@ -14,6 +14,16 @@ from src.validation import (
     validar_csv_completo
 )
 
+# --- Função Auxiliar (coloque isso no topo do arquivo ou em utils.py) ---
+def formatar_titulo_erro(tipo_erro):
+    titulos = {
+        'nomes_colunas': 'Nomes das Colunas Incorretos',
+        'formato_valor': 'Formato de Valor Monetário Inválido',
+        'formato_data': 'Formato de Data Inválido',
+        'colunas_faltando': 'Colunas Obrigatórias Ausentes'
+    }
+    return titulos.get(tipo_erro, 'Erro de Validação')
+
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",
     page_icon=":bar_chart:",
@@ -69,6 +79,55 @@ with container:
 
             with st.expander("Visualizar Dados Brutos (Primeiras 5 linhas)", expanded=False):
                 st.dataframe(df.head())
+
+            st.subheader("Diagnóstico de Validação")
+            if resultado_validacao["valido"]:
+                st.success("O arquivo é válido e segue o padrão esperado!")
+                st.button("Iniciar Ingestão no Banco de Dados", type="primary")
+            else:
+                
+                st.error(f"O arquivo contém {resultado_validacao['total_erros']} divergência(s) que precisam ser corrigidas.")
+                st.info("A IA precisará gerar um script para converter estes valores.")
+                
+                st.divider()
+                st.subheader("Relatório de Divergências")
+
+                for i, erro in enumerate(resultado_validacao["detalhes"]):
+                    
+                    with st.expander(f"Erro #{i+1}: {formatar_titulo_erro(erro.get('tipo'))}", expanded=False):
+                        
+                        tipo_erro = erro.get("tipo")
+                        if tipo_erro == 'nomes_colunas':
+                            st.write("As colunas do arquivo não batem com o padrão esperado. O sistema identificou os seguintes nomes:")
+
+                            mapeamento = erro.get("mapeamento", {})
+                            if mapeamento:
+                                df_map = pd.DataFrame(list(mapeamento.items()), columns=["Coluna no Arquivo", "Coluna Esperada (Padrão)"])
+                                st.table(df_map)
+                            else:
+                                st.warning("Não foi possível sugerir um mapeamento automático.")
+
+                        elif tipo_erro == 'formato_valor':
+                            formato = erro.get("formato_detectado", "Desconhecido")
+                            st.markdown(f"**Problema:** Os valores monetários estão em um formato não padronizado.")
+                            st.markdown(f"**Detectado:** `{formato}` (Ex: 1.234,56)")
+                            st.markdown(f"**Esperado:** `Decimal` (Ex: 1234.56)")
+
+                        elif tipo_erro == 'formato_data':
+                            formato = erro.get("formato_detectado", "Desconhecido")
+                            st.markdown(f"**Problema:** As datas não estão no padrão do banco de dados.")
+                            st.markdown(f"**Detectado:** `{formato}`")
+                            st.markdown(f"**Esperado:** `YYYY-MM-DD`")
+
+                        elif tipo_erro == 'colunas_faltando':
+                            colunas = erro.get("colunas", [])
+                            st.error(f"Estão faltando as seguintes colunas obrigatórias: {', '.join(colunas)}")
+
+                        else:
+                            st.write(erro)
+
+                st.divider()
+                st.button("Solicitar Correção via IA", type="primary")
 
         except Exception as e:
             st.error(f"Erro ao processar o arquivo: {e}")
