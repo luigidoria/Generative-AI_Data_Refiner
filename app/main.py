@@ -66,7 +66,10 @@ with container:
             m2.metric("Colunas", qtd_colunas)
             m3.metric("Delimitador", f"{delimitador_detectado}")
             m4.metric("Encoding", encoding_detectado)
-        
+
+            with st.expander("Visualizar Dados Brutos (Primeiras 5 linhas)", expanded=False):
+                st.dataframe(df.head())
+
         except Exception as e:
             st.error(f"Erro ao processar o arquivo: {e}")
         
