@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",
@@ -25,4 +26,7 @@ container = st.container(border=True)
 with container:
     st.markdown("### Upload de Arquivos")
     st.info("Faça o upload dos seus arquivos financeiros (CSV) para validação e correção automática via IA.")
-    st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed")
+    if uploaded_file is not None:
+        dataframe = pd.read_csv(uploaded_file)
+        st.write(dataframe[:5])
