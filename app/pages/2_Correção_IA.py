@@ -6,7 +6,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# Ocultar menu de navegação padrão do Streamlit
+with st.sidebar:
+    st.header("Configurações")
+    st.caption("Sistema de Ingestão v1.0")
+    st.divider()
+    st.markdown("""
+    **Como funciona:**
+    1. Suba o arquivo CSV.
+    2. O sistema valida os dados.
+    3. A IA corrige erros automaticamente.
+    4. Dados corrigidos são inseridos no banco.
+    """)
+
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {
@@ -16,3 +27,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("Correção Automática via IA")
+
+if st.button("Voltar para a pagina de upload", type="primary"):
+    st.switch_page("main.py")

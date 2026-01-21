@@ -126,7 +126,10 @@ with container:
                             st.write(erro)
 
                 st.divider()
-                st.button("Solicitar Correção via IA", type="primary")
+                if st.button("Solicitar Correção via IA", type="primary"):
+                    st.session_state["arquivo_erros"] = resultado_validacao
+                    st.session_state["df_original"] = df
+                    st.switch_page("pages/2_Correção_IA.py")
 
         except Exception as e:
             st.error(f"Erro ao processar o arquivo: {e}")
