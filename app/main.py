@@ -79,7 +79,6 @@ with container:
             else:
                 
                 st.error(f"O arquivo contém {resultado_validacao['total_erros']} divergência(s) que precisam ser corrigidas.")
-                st.info("A IA precisará gerar um script para converter estes valores.")
                 
                 st.divider()
                 st.subheader("Relatório de Divergências")
