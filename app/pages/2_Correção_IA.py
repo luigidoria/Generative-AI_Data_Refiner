@@ -85,28 +85,23 @@ st.divider()
 
 st.subheader("Gerando Script de Correção")
 
-# Gerar hash da estrutura do arquivo
 colunas_df = list(df.columns)
 hash_estrutura = gerar_hash_estrutura(colunas_df, resultado_validacao["detalhes"])
 
-# Verificar se já existe script no cache
 script_cache = buscar_script_cache(hash_estrutura)
 
 if script_cache:
-    # Script encontrado no cache
     st.success(f"Script encontrado no cache! (Utilizado {script_cache['vezes_utilizado']} vezes)")
     st.info("Economia: Chamada à IA evitada! Reutilizando script validado.")
     codigo_correcao = script_cache["script"]
     usou_cache = True
 else:
-    # Precisa gerar novo script com IA
     st.info("Gerando novo script com IA...")
     usou_cache = False
 
 with st.spinner("Processando..." if script_cache else "IA analisando os erros e gerando código de correção..."):
     try:
         if not script_cache:
-            # Só chama a IA se não encontrou no cache
             env_path = Path(__file__).parent.parent / "secrets.env"
             load_dotenv(env_path)
             GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -120,11 +115,9 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                 api_key=GROQ_API_KEY
             )
             
-            # Carregar template para obter colunas válidas
             with open("database/template.json", "r", encoding="utf-8") as f:
                 template = json.load(f)
             
-            # Extrair colunas válidas (incluindo aliases)
             colunas_validas = []
             for nome_col, config in template["colunas"].items():
                 colunas_validas.append(nome_col)
@@ -140,16 +133,34 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                 if not config.get("obrigatorio", False)
             ]
             
-            # Identificar tipos de erros presentes
             tipos_erros = [erro.get("tipo") for erro in resultado_validacao["detalhes"]]
             
             erros_texto = json.dumps(resultado_validacao["detalhes"], indent=2, ensure_ascii=False)
             sample_data = df.head(3).to_dict('records')
+            
+            historico_tentativas = ""
+            if "script_anterior" in st.session_state and "erro_anterior" in st.session_state:
+                historico_tentativas = f"""
+                **ATENÇÃO - TENTATIVA ANTERIOR FALHOU:**
+                
+                O script abaixo foi gerado anteriormente mas causou erro na validação:
+                
+                ```python
+                {st.session_state['script_anterior']}
+                ```
+                
+                **Erro que ocorreu:**
+                {st.session_state['erro_anterior']}
+                
+                **IMPORTANTE:** NÃO repita o mesmo erro! Analise o que deu errado e corrija a abordagem.
+                """
         
             prompt = f"""
                 Você é um especialista em correção de dados com Python e Pandas.
 
                 Analise os seguintes erros detectados em um arquivo CSV:
+                
+                {historico_tentativas}
 
                 **Erros Detectados:**
                 {erros_texto}
@@ -271,11 +282,15 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                     if resultado_revalidacao["valido"]:
                         st.success("Validação concluída! O arquivo está correto e pronto para inserção no banco.")
                         
-                        # Salvar script no cache apenas se não veio do cache e validação passou
                         if not usou_cache:
                             tipos_erros = [erro.get("tipo") for erro in resultado_validacao["detalhes"]]
                             salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
                             st.info("Script validado e salvo no cache para uso futuro!")
+                        
+                        if "script_anterior" in st.session_state:
+                            del st.session_state["script_anterior"]
+                        if "erro_anterior" in st.session_state:
+                            del st.session_state["erro_anterior"]
                         
                         st.session_state["df_corrigido"] = df_corrigido
                         st.session_state["validacao_aprovada"] = True
@@ -298,6 +313,10 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                         col_a, col_b, col_c = st.columns([1, 2, 1])
                         with col_b:
                             if st.button("Solicitar Nova Correção via IA", type="secondary", use_container_width=True):
+                                st.session_state["script_anterior"] = codigo_correcao
+                                erros_detalhados = "\n".join([f"- {formatar_titulo_erro(e.get('tipo'))}" for e in resultado_revalidacao["detalhes"]])
+                                st.session_state["erro_anterior"] = f"Erros restantes após execução:\n{erros_detalhados}"
+                                
                                 st.session_state["arquivo_erros"] = resultado_revalidacao
                                 st.session_state["df_original"] = df_corrigido
                                 st.rerun()
