@@ -260,6 +260,13 @@ with st.spinner("IA analisando os erros e gerando código de correção..."):
                         st.subheader("Erros Restantes")
                         for i, erro in enumerate(resultado_revalidacao["detalhes"]):
                             st.write(f"{i+1}. {formatar_titulo_erro(erro.get('tipo'))}")
+
+                        st.warning("Um novo ciclo de correção será necessário.")
+                        
+                        if st.button("Solicitar Nova Correção via IA", type="secondary"):
+                            st.session_state["arquivo_erros"] = resultado_revalidacao
+                            st.session_state["df_original"] = df_corrigido
+                            st.rerun()
                 
                 finally:
                     os.remove(tmp_path)
