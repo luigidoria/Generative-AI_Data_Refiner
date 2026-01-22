@@ -231,6 +231,38 @@ with st.spinner("IA analisando os erros e gerando código de correção..."):
                 st.dataframe(df_corrigido.head(10))
                 
                 st.divider()
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode='w', encoding='utf-8', newline='') as tmp:
+                    df_corrigido.to_csv(tmp.name, index=False)
+                    tmp_path = tmp.name
+                
+                try:
+                    with open("database/template.json", "r") as f:
+                        template_validacao = json.load(f)
+                    
+                    resultado_revalidacao = validar_csv_completo(tmp_path, template_validacao)
+                    
+                    if resultado_revalidacao["valido"]:
+                        st.success("Validação concluída! O arquivo está correto e pronto para inserção no banco.")
+                        
+                        st.session_state["df_corrigido"] = df_corrigido
+                        st.session_state["validacao_aprovada"] = True
+                        
+                        csv = df_corrigido.to_csv(index=False).encode('utf-8')
+
+
+                        if st.button("Inserir no Banco de Dados", type="primary", use_container_width=True):
+                            st.info("Funcionalidade de inserção no banco será implementada em breve.")
+
+                    else:
+                        st.error(f"Validação falhou! Ainda existem {resultado_revalidacao['total_erros']} erro(s).")
+                        
+                        st.subheader("Erros Restantes")
+                        for i, erro in enumerate(resultado_revalidacao["detalhes"]):
+                            st.write(f"{i+1}. {formatar_titulo_erro(erro.get('tipo'))}")
+                
+                finally:
+                    os.remove(tmp_path)
                 
             except Exception as e:
                 st.error(f"Erro ao executar: {str(e)}")
