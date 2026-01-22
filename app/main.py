@@ -13,6 +13,7 @@ from src.validation import (
     detectar_delimitador,
     validar_csv_completo
 )
+from services.database import init_database
 
 from utils import formatar_titulo_erro
 
@@ -40,7 +41,6 @@ if "resultado_validacao" not in st.session_state:
     st.session_state["resultado_validacao"] = None
 if "nome_arquivo" not in st.session_state:
     st.session_state["nome_arquivo"] = None
-
 
 st.title("Portal de Ingestão de Transações")
 st.divider()
@@ -164,3 +164,5 @@ with container:
                 st.session_state["arquivo_erros"] = resultado_validacao
                 st.session_state["df_original"] = df
                 st.switch_page("pages/2_Correção_IA.py")
+
+init_database()
