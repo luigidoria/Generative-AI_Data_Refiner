@@ -223,10 +223,7 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
             codigo_correcao = chat_completion.choices[0].message.content
             codigo_correcao = codigo_correcao.replace("```python", "").replace("```", "").strip()
             
-            # Salvar script no cache
-            salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
-            
-            st.success("Script de correção gerado e salvo no cache!")
+            st.success("Script de correção gerado com sucesso!")
         
         st.divider()
         st.subheader("Código de Correção")
@@ -269,6 +266,12 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                     
                     if resultado_revalidacao["valido"]:
                         st.success("Validação concluída! O arquivo está correto e pronto para inserção no banco.")
+                        
+                        # Salvar script no cache apenas se não veio do cache e validação passou
+                        if not usou_cache:
+                            tipos_erros = [erro.get("tipo") for erro in resultado_validacao["detalhes"]]
+                            salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
+                            st.info("Script validado e salvo no cache para uso futuro!")
                         
                         st.session_state["df_corrigido"] = df_corrigido
                         st.session_state["validacao_aprovada"] = True
