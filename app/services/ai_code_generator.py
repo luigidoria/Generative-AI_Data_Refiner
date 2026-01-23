@@ -20,7 +20,8 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
             script_cache["script"],
             True,
             hash_estrutura,
-            script_cache["id"]
+            script_cache["id"],
+            script_cache["vezes_utilizado"]
         )
     
     env_path = Path(__file__).parent.parent / "secrets.env"
@@ -161,7 +162,8 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
         codigo_correcao,
         False,  
         hash_estrutura,
-        None
+        None,
+        0
     )
 
 def new_correction(codigo_correcao, resultado_revalidacao, df_corrigido):

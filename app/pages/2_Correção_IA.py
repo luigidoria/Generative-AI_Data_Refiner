@@ -87,7 +87,7 @@ if "codigo_gerado" not in st.session_state:
     st.info("Gerando script de correção...")
     with st.spinner("IA analisando os erros e gerando código de correção..."):
         try:
-            codigo_correcao, usou_cache, hash_estrutura, script_id_cache = gerar_codigo_correcao_ia(df, resultado_validacao)
+            codigo_correcao, usou_cache, hash_estrutura, script_id_cache, vezes_utilizado = gerar_codigo_correcao_ia(df, resultado_validacao)
             
             st.session_state["codigo_gerado"] = codigo_correcao
             st.session_state["usou_cache"] = usou_cache
@@ -95,8 +95,8 @@ if "codigo_gerado" not in st.session_state:
             
             if usou_cache:
                 st.session_state["script_id_cache"] = script_id_cache
-                st.success(f"Script encontrado no cache!")
-                st.info("Economia: Chamada à IA evitada! Reutilizando script validado.")
+                st.session_state["vezes_utilizado"] = vezes_utilizado
+                st.success(f"Script encontrado no cache! Usado {vezes_utilizado} vezes.")
             else:
                 st.success("Script de correção gerado com sucesso!")
                 
