@@ -139,3 +139,44 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
     finally:
         if conn:
             conn.close()
+
+def registrar_log_ingestao(arquivo_nome: str, registros_total: int, registros_sucesso: int, registros_erro: int,
+                           usou_ia: bool, script_id: int = None, duracao_segundos: float = 0.0) -> bool:
+    
+    db_path = Path(__file__).parent.parent.parent / "database" / "transacoes.db"
+    conn = None
+    
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute(
+            """
+            INSERT INTO log_ingestao 
+            (arquivo_nome, registros_total, registros_sucesso, registros_erro, 
+             usou_ia, script_id, duracao_segundos)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                arquivo_nome,
+                registros_total,
+                registros_sucesso,
+                registros_erro,
+                usou_ia,
+                script_id,
+                duracao_segundos
+            )
+        )
+        
+        conn.commit()
+        return True
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"Erro ao registrar log de ingestão: {e}")
+        return False
+        
+    finally:
+        if conn:
+            conn.close()
