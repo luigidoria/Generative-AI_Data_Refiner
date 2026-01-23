@@ -79,36 +79,72 @@ else:
     
     st.subheader("Relatório de Inserção")
     
-    col1, col2, col3, col4 = st.columns(4)
+    # Verificar se há duplicados
+    duplicados = resultado.get("registros_duplicados", 0)
+    erros_count = len(resultado.get("erros", []))
+    erros_nao_duplicados = sum(1 for e in resultado.get("erros", []) if "duplicado" not in e.get("erro", "").lower())
+    
+    # Organizar métricas em 2 linhas para não cortar
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total de Registros", resultado.get("total_registros", 0))
     with col2:
         st.metric("Inseridos com Sucesso", resultado.get("registros_inseridos", 0), 
                   delta_color="normal")
     with col3:
-        erros_count = len(resultado.get("erros", []))
-        st.metric("Erros", erros_count, delta_color="inverse")
-    with col4:
         st.metric("Tempo de Execução", f"{duracao:.2f}s")
+    
+    if duplicados > 0 or erros_nao_duplicados > 0:
+        col4, col5, col6 = st.columns(3)
+        with col4:
+            if duplicados > 0:
+                st.metric("Duplicados Ignorados", duplicados, delta_color="off")
+        with col5:
+            if erros_nao_duplicados > 0:
+                st.metric("Erros", erros_nao_duplicados, delta_color="inverse")
     
     st.divider()
     
     erros = resultado.get("erros", [])
     if erros:
-        st.warning(f"Atenção: {len(erros)} registro(s) não foram inseridos devido a erros.")
+        # Separar duplicados de outros erros
+        erros_duplicados = [e for e in erros if "duplicado" in e.get("erro", "").lower()]
+        erros_outros = [e for e in erros if "duplicado" not in e.get("erro", "").lower()]
         
-        with st.expander("Ver Detalhes dos Erros", expanded=True):
-            erros_df = pd.DataFrame(erros)
-            st.dataframe(
-                erros_df,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
-                    "id_transacao": st.column_config.TextColumn("ID Transação", width="medium"),
-                    "erro": st.column_config.TextColumn("Descrição do Erro", width="large")
-                }
-            )
+        if erros_duplicados:
+            st.info(f"{len(erros_duplicados)} registro(s) já existia(m) no banco de dados e foram ignorados.")
+            
+            with st.expander("Ver IDs Duplicados"):
+                duplicados_df = pd.DataFrame(erros_duplicados)
+                st.dataframe(
+                    duplicados_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
+                        "id_transacao": st.column_config.TextColumn("ID Transação", width="medium"),
+                        "erro": st.column_config.TextColumn("Motivo", width="large")
+                    }
+                )
+        
+        if erros_outros:
+            st.warning(f"Atenção: {len(erros_outros)} registro(s) não foram inseridos devido a erros.")
+            
+            with st.expander("Ver Detalhes dos Erros", expanded=True):
+                erros_df = pd.DataFrame(erros_outros)
+                st.dataframe(
+                    erros_df,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
+                        "id_transacao": st.column_config.TextColumn("ID Transação", width="medium"),
+                        "erro": st.column_config.TextColumn("Descrição do Erro", width="large")
+                    }
+                )
+        
+        if not erros_outros and erros_duplicados:
+            st.success("Todos os novos registros foram inseridos com sucesso!")
     else:
         st.success("Todos os registros foram inseridos sem erros!")
     

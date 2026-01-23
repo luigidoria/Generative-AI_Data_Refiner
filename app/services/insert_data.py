@@ -59,11 +59,26 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         
+        cursor.execute("SELECT id_transacao FROM transacoes_financeiras")
+        ids_existentes = set(row[0] for row in cursor.fetchall())
+        
         registros_inseridos = 0
+        registros_duplicados = 0
         erros = []
         
         for index, row in df.iterrows():
             try:
+                id_transacao = row['id_transacao']
+                
+                if id_transacao in ids_existentes:
+                    registros_duplicados += 1
+                    erros.append({
+                        "linha": index + 1,
+                        "id_transacao": id_transacao,
+                        "erro": "ID de transação já existe no banco de dados (duplicado)"
+                    })
+                    continue
+                
                 status = normalizar_status(row.get('status'), template)
                 tipo = normalizar_tipo(row.get('tipo'), template)
                 categoria = normalizar_categoria(row.get('categoria'), template)
@@ -76,7 +91,7 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
-                        row['id_transacao'],
+                        id_transacao,
                         row['data_transacao'],
                         row['valor'],
                         tipo,
@@ -88,6 +103,8 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
                     )
                 )
                 registros_inseridos += 1
+                ids_existentes.add(id_transacao)
+                
             except Exception as e:
                 erros.append({
                     "linha": index + 1,
@@ -101,6 +118,7 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
         return {
             "sucesso": len(erros) == 0,
             "registros_inseridos": registros_inseridos,
+            "registros_duplicados": registros_duplicados,
             "total_registros": len(df),
             "erros": erros
         }
