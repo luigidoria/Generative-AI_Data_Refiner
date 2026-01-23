@@ -52,11 +52,13 @@ def normalizar_categoria(valor: Any, template: Dict) -> str:
 
 def inserir_transacoes(df: pd.DataFrame) -> Dict:
     db_path = Path(__file__).parent.parent.parent / "database" / "transacoes.db"
+    conn = None
     
     try:
         template = carregar_template()
         
         conn = sqlite3.connect(db_path)
+        conn.execute("BEGIN TRANSACTION")
         cursor = conn.cursor()
         
         cursor.execute("SELECT id_transacao FROM transacoes_financeiras")
@@ -113,7 +115,6 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
                 })
         
         conn.commit()
-        conn.close()
         
         return {
             "sucesso": len(erros) == 0,
@@ -124,9 +125,17 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
         }
         
     except Exception as e:
+        if conn:
+            conn.rollback()
+        
         return {
             "sucesso": False,
             "registros_inseridos": 0,
+            "registros_duplicados": 0,
             "total_registros": len(df),
-            "erros": [{"erro": f"Erro geral: {str(e)}"}]
+            "erros": [{"erro": f"Erro fatal durante inserção: {str(e)}"}]
         }
+    
+    finally:
+        if conn:
+            conn.close()
