@@ -47,6 +47,9 @@ if "banco_dados" not in st.session_state:
 if "sem_modficadoes_necessarias" not in st.session_state:
     st.session_state["sem_modficadoes_necessarias"] = False
 
+def rest_all_states():
+    st.session_state.clear()
+
 st.title("Portal de Ingestão de Transações")
 st.divider()
 
@@ -63,7 +66,7 @@ container = st.container(border=True)
 with container:
     st.markdown("### Upload de Arquivos")
     st.info("Faça o upload dos seus arquivos financeiros (CSV) para validação e correção automática via IA.")
-    uploaded_file = st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed")
+    uploaded_file = st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed", on_change=rest_all_states)
     if (uploaded_file is not None or (
                 st.session_state["df"] is not None 
                 and st.session_state["encoding"] is not None 
