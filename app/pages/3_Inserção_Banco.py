@@ -6,7 +6,7 @@ import time
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from app.services.insert_data import inserir_transacoes
+from app.services.insert_data import inserir_transacoes, registrar_log_ingestao
 
 st.set_page_config(
     page_title="Franq | Inserção no Banco",
@@ -176,9 +176,18 @@ if st.session_state.get("confirmar_insercao", False):
         resultado = inserir_transacoes(df_corrigido)
         duracao = time.time() - inicio
         
-        progress_bar.progress(90)
-        status_text.text("Finalizando...")
-        time.sleep(0.3)
+        progress_bar.progress(80)
+        status_text.text("Registrando log de ingestão...")
+        time.sleep(0.2)
+        
+        arquivo_nome = st.session_state.get("nome_arquivo", "arquivo_desconhecido.csv")
+        script_id = st.session_state.get("script_id_cache", None)
+        usou_ia = script_id is not None
+        
+        registrar_log_ingestao(arquivo_nome=arquivo_nome, registros_total=resultado.get("total_registros", 0),
+                               registros_sucesso=resultado.get("registros_inseridos", 0),
+                               registros_erro=len(resultado.get("erros", [])) - resultado.get("registros_duplicados", 0),
+                               usou_ia=usou_ia, script_id=script_id, duracao_segundos=duracao)
         
         progress_bar.progress(100)
         status_text.text("Inserção concluída!")

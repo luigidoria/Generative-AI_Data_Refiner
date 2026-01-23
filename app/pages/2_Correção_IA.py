@@ -94,9 +94,12 @@ if script_cache:
     st.info("Economia: Chamada à IA evitada! Reutilizando script validado.")
     codigo_correcao = script_cache["script"]
     usou_cache = True
+    st.session_state["script_id_cache"] = script_cache["id"]
 else:
     st.info("Gerando novo script com IA...")
     usou_cache = False
+    if "script_id_cache" in st.session_state:
+        del st.session_state["script_id_cache"]
 
 with st.spinner("Processando..." if script_cache else "IA analisando os erros e gerando código de correção..."):
     try:
@@ -288,7 +291,8 @@ with st.spinner("Processando..." if script_cache else "IA analisando os erros e 
                         
                         if not usou_cache:
                             tipos_erros = [erro.get("tipo") for erro in resultado_validacao["detalhes"]]
-                            salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
+                            script_id = salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
+                            st.session_state["script_id_cache"] = script_id
                             st.info("Script validado e salvo no cache para uso futuro!")
                         
                         if "script_anterior" in st.session_state:
