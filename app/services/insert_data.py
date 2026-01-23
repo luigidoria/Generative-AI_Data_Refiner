@@ -17,6 +17,15 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
         # Inserir cada linha
         for index, row in df.iterrows():
             try:
+                # Normalizar status
+                status = row.get('status', 'PENDENTE')
+                if pd.isna(status) or status is None:
+                    status = 'PENDENTE'
+                else:
+                    status = str(status).upper().strip()
+                    if status not in ('PENDENTE', 'CONCLUIDA', 'CANCELADA'):
+                        status = 'PENDENTE'
+                
                 cursor.execute(
                     """
                     INSERT INTO transacoes_financeiras 
@@ -33,7 +42,7 @@ def inserir_transacoes(df: pd.DataFrame) -> Dict:
                         row.get('descricao', None),
                         row['conta_origem'],
                         row.get('conta_destino', None),
-                        row['status'] if row['status'].lower() in ('pendente', 'concluida', 'cancelada') else 'PENDENTE'
+                        status
                     )
                 )
                 registros_inseridos += 1
