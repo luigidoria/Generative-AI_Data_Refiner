@@ -31,22 +31,24 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-if "df" not in st.session_state:
-    st.session_state["df"] = None
-if "encoding" not in st.session_state:
-    st.session_state["encoding"] = None
-if "delimitador" not in st.session_state:
-    st.session_state["delimitador"] = None
-if "resultado_validacao" not in st.session_state:
-    st.session_state["resultado_validacao"] = None
-if "nome_arquivo" not in st.session_state:
-    st.session_state["nome_arquivo"] = None
-if "banco_dados" not in st.session_state:
+state_padroes = {
+    "df": None,
+    "encoding": None,
+    "delimitador": None,
+    "resultado_validacao": None,
+    "nome_arquivo": None,
+    "sem_modficadoes_necessarias": False,
+    "banco_dados": False
+}
+
+for key, value in state_padroes.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+if not st.session_state["banco_dados"]:
     init_database()
     st.session_state["banco_dados"] = True
-if "sem_modficadoes_necessarias" not in st.session_state:
-    st.session_state["sem_modficadoes_necessarias"] = False
-
+    
 def rest_all_states():
     st.session_state.clear()
 
