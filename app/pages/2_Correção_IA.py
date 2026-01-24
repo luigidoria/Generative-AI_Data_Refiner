@@ -12,6 +12,7 @@ from src.validation import validar_csv_completo
 from app.utils import formatar_titulo_erro
 from app.services.script_cache import salvar_script_cache
 from app.services.ai_code_generator import gerar_codigo_correcao_ia, new_correction
+from app.utils import carregar_template
 
 st.set_page_config(
     page_title="Franq | Correção IA",
@@ -153,8 +154,8 @@ if executar_script:
             tmp_path = tmp.name
         
         try:
-            with open("database/template.json", "r") as f:
-                template_validacao = json.load(f)
+            
+            template_validacao = carregar_template()
             
             resultado_revalidacao = validar_csv_completo(tmp_path, template_validacao)
             
