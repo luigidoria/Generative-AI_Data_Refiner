@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import time
 
+# Adiciona o diretório raiz ao path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.services.insert_data import inserir_transacoes, registrar_log_ingestao
@@ -14,6 +15,12 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown("""
+    <style>
+        [data-testid="stSidebarNav"] { display: none; }
+    </style>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
     st.markdown("""
     **Como funciona:**
@@ -22,21 +29,99 @@ with st.sidebar:
     3. Visualize o relatório de status.
     """)
 
-st.markdown("""
-    <style>
-        [data-testid="stSidebarNav"] {
-            display: none;
+
+def limpar_sessao_para_inicio():
+    keys_to_clear = [
+        "df_original", "df_corrigido", "validacao_aprovada",
+        "resultado_validacao", "erros_validacao", "codigo_correcao_gerado",
+        "hash_atual", "usou_cache_flag", "resultado_insercao",
+        "duracao_insercao", "insercao_concluida", "confirmar_insercao",
+        "sem_modficadoes_necessarias", "arquivo_erros", "codigo_gerado",
+        "usou_cache", "hash_estrutura", "vezes_utilizado", "script_id_cache",
+        "nome_arquivo"
+    ]
+    for key in keys_to_clear:
+        if key in st.session_state:
+            del st.session_state[key]
+
+def exibir_preview(df):
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total de Registros", len(df))
+    col2.metric("Colunas", len(df.columns))
+    
+    if "valor" in df.columns:
+        valor_total = df["valor"].sum()
+        col3.metric("Valor Total", f"R$ {valor_total:,.2f}")
+
+    st.divider()
+    st.subheader("Preview dos Dados")
+    st.info("Revise os dados abaixo antes de confirmar a inserção.")
+
+    st.dataframe(
+        df.head(10),
+        width='stretch',
+        hide_index=True,
+        column_config={
+            "valor": st.column_config.NumberColumn(
+                "Valor", format="R$ %.2f"
+            )
         }
-    </style>
-""", unsafe_allow_html=True)
+    )
+    
+    if len(df) > 10:
+        st.caption(f"Mostrando 10 de {len(df)} registros.")
+    st.divider()
+
+def exibir_relatorio(resultado, duracao):
+    registros_inseridos = resultado.get("registros_inseridos", 0)
+    
+    if registros_inseridos > 0:
+        st.success("Dados processados com sucesso!")
+    else:
+        st.warning("O processo rodou, mas nenhum registro novo foi inserido.")
+
+    st.divider()
+    st.subheader("Relatório de Inserção")
+
+    duplicados = resultado.get("registros_duplicados", 0)
+    erros_lista = resultado.get("erros", [])
+
+    erros_reais = [e for e in erros_lista if "duplicado" not in str(e.get("erro", "")).lower()]
+    duplicados_lista = [e for e in erros_lista if "duplicado" in str(e.get("erro", "")).lower()]
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total Processado", resultado.get("total_registros", 0))
+    c2.metric("Inseridos", registros_inseridos)
+    c3.metric("Rejeitados (Erros/Duplicados)", len(erros_lista))
+
+    c4, c5, c6 = st.columns(3)
+    c4.metric("Arquivo", st.session_state.get("nome_arquivo", "N/A"))
+    c5.metric("Script IA", "Utilizado" if st.session_state.get("script_id_cache") else "Não utilizado")
+    c6.metric("Tempo", f"{duracao:.2f}s")
+
+    st.divider()
+
+    if duplicados_lista:
+        st.info(f"{len(duplicados_lista)} registros já existiam no banco e foram ignorados.")
+        with st.expander("Ver Registros Duplicados"):
+            st.dataframe(pd.DataFrame(duplicados_lista), width='stretch')
+
+    if erros_reais:
+        st.error(f"{len(erros_reais)} registros falharam na inserção.")
+        with st.expander("Ver Detalhes dos Erros", expanded=True):
+            st.dataframe(
+                pd.DataFrame(erros_reais),
+                width='stretch',
+                column_config={
+                    "erro": st.column_config.TextColumn("Motivo do Erro", width="large")
+                }
+            )
 
 st.title("Inserção no Banco de Dados")
 st.divider()
 
 if "df_corrigido" not in st.session_state or "validacao_aprovada" not in st.session_state:
     st.warning("Nenhum dado validado encontrado!")
-    st.info("Por favor, volte para a página de Correção IA e valide os dados primeiro.")
-    
     if st.button("Voltar para Correção IA", type="primary"):
         st.switch_page("pages/2_Correção_IA.py")
     st.stop()
@@ -44,208 +129,68 @@ if "df_corrigido" not in st.session_state or "validacao_aprovada" not in st.sess
 df_corrigido = st.session_state["df_corrigido"]
 
 if not st.session_state.get("insercao_concluida", False):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total de Registros", len(df_corrigido))
-    with col2:
-        st.metric("Colunas", len(df_corrigido.columns))
-    with col3:
-        if "valor" in df_corrigido.columns:
-            valor_total = df_corrigido["valor"].sum()
-            st.metric("Valor Total", f"R$ {valor_total:,.2f}")
     
-    st.divider()
+    exibir_preview(df_corrigido)
+
+    st.warning("Esta ação irá escrever os dados no banco de dados.")
+
+    if st.button("Confirmar Inserção", type="primary", width='stretch'):
+        
+        with st.status("Processando ingestão de dados...", expanded=False) as status:
+            try:
+                inicio = time.time()
+                
+                st.write("Conectando ao banco de dados...")
+
+                st.write("Inserindo registros...")
+                resultado = inserir_transacoes(df_corrigido)
+                
+                duracao = time.time() - inicio
+                
+                st.write("Registrando logs de auditoria...")
+                arquivo_nome = st.session_state.get("nome_arquivo", "unknown.csv")
+                script_id = st.session_state.get("script_id_cache")
+                
+                total_erros_geral = len(resultado.get("erros", []))
+                erros_duplicados = resultado.get("registros_duplicados", 0)
+                erros_reais = total_erros_geral - erros_duplicados
+                
+                registrar_log_ingestao(
+                    arquivo_nome=arquivo_nome,
+                    registros_total=resultado.get("total_registros", 0),
+                    registros_sucesso=resultado.get("registros_inseridos", 0),
+                    registros_erro=erros_reais,
+                    usou_ia=(script_id is not None),
+                    script_id=script_id,
+                    duracao_segundos=duracao
+                )
+                
+                status.update(label="Processo concluído!", state="complete", expanded=False)
+                
+                st.session_state["resultado_insercao"] = resultado
+                st.session_state["duracao_insercao"] = duracao
+                st.session_state["insercao_concluida"] = True
+                st.rerun()
+
+            except Exception as e:
+                status.update(label="Erro crítico!", state="error")
+                st.error(f"Falha na inserção: {str(e)}")
+                st.stop()
+
+    if st.session_state.get("sem_modficadoes_necessarias", False):
+        if st.button("Voltar para Upload", width='stretch'):
+            st.switch_page("main.py")
     
-    st.subheader("Preview dos Dados")
-    st.info("Revise os dados abaixo antes de confirmar a inserção no banco de dados.")
-    
-    num_preview = min(10, len(df_corrigido))
-    st.dataframe(
-        df_corrigido.head(num_preview),
-        width='stretch',
-        hide_index=False
-    )
-    
-    if len(df_corrigido) > num_preview:
-        st.caption(f"Mostrando {num_preview} de {len(df_corrigido)} registros.")
-    
-    st.divider()
+    else:
+        if st.button("Voltar para Correção", width='stretch'):
+            st.switch_page("pages/2_Correção_IA.py")
+
 else:
     resultado = st.session_state.get("resultado_insercao", {})
     duracao = st.session_state.get("duracao_insercao", 0)
-    registros_inseridos = resultado.get("registros_inseridos", 0)
     
-    # Só mostrar mensagem de sucesso se houve inserções
-    if registros_inseridos > 0:
-        st.success("Dados inseridos com sucesso no banco de dados!")
-    else:
-        st.warning("Nenhum registro foi inserido.")
+    exibir_relatorio(resultado, duracao)
     
-    st.divider()
-    
-    st.subheader("Relatório de Inserção")
-    
-    duplicados = resultado.get("registros_duplicados", 0)
-    erros_count = len(resultado.get("erros", []))
-    erros_nao_duplicados = sum(1 for e in resultado.get("erros", []) if "duplicado" not in e.get("erro", "").lower())
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Total de Registros", resultado.get("total_registros", 0))
-    with col2:
-        st.metric("Inseridos com Sucesso", registros_inseridos, delta_color="normal")
-    with col3:
-        if duplicados > 0:
-            st.metric("Duplicados", duplicados)
-        elif erros_nao_duplicados > 0:
-            st.metric("Erros", erros_nao_duplicados)
-
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        arquivo_nome = st.session_state.get("nome_arquivo", "N/A")
-        st.metric("Arquivo", arquivo_nome, label_visibility="visible")
-    with col5:
-        script_id = st.session_state.get("script_id_cache", None)
-        if script_id:
-            st.metric("Script IA", "Utilizado")
-        else:
-            st.metric("Script IA", "Não utilizado")
-    with col6:
-        st.metric("Tempo de Execução", f"{duracao:.2f}s")
-    
-    st.divider()
-    
-    erros = resultado.get("erros", [])
-    if erros:
-        # Separar duplicados de outros erros
-        erros_duplicados = [e for e in erros if "duplicado" in e.get("erro", "").lower()]
-        erros_outros = [e for e in erros if "duplicado" not in e.get("erro", "").lower()]
-        
-        if erros_duplicados:
-            st.info(f"{len(erros_duplicados)} registro(s) já existia(m) no banco de dados e foram ignorados.")
-            
-            with st.expander("Ver IDs Duplicados"):
-                duplicados_df = pd.DataFrame(erros_duplicados)
-                st.dataframe(
-                    duplicados_df,
-                    width='stretch',
-                    hide_index=True,
-                    column_config={
-                        "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
-                        "id_transacao": st.column_config.TextColumn("ID Transação", width="medium"),
-                        "erro": st.column_config.TextColumn("Motivo", width="large")
-                    }
-                )
-        
-        if erros_outros:
-            st.warning(f"Atenção: {len(erros_outros)} registro(s) não foram inseridos devido a erros.")
-            
-            with st.expander("Ver Detalhes dos Erros", expanded=True):
-                erros_df = pd.DataFrame(erros_outros)
-                st.dataframe(
-                    erros_df,
-                    width='stretch',
-                    hide_index=True,
-                    column_config={
-                        "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
-                        "id_transacao": st.column_config.TextColumn("ID Transação", width="medium"),
-                        "erro": st.column_config.TextColumn("Descrição do Erro", width="large")
-                    }
-                )
-        
-        if not erros_outros and erros_duplicados and registros_inseridos > 0:
-            st.success("Todos os novos registros foram inseridos com sucesso!")
-    else:
-        st.success("Todos os registros foram inseridos sem erros!")
-    
-    st.divider()
-
-if st.session_state.get("confirmar_insercao", False):
-    st.session_state["confirmar_insercao"] = False
-    
-    st.subheader("Inserindo Dados...")
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    try:
-        progress_bar.progress(10)
-        status_text.text("Conectando ao banco de dados...")
-        time.sleep(0.3)
-        
-        progress_bar.progress(30)
-        status_text.text("Iniciando inserção dos registros...")
-        time.sleep(0.3)
-        
-        inicio = time.time()
-        resultado = inserir_transacoes(df_corrigido)
-        duracao = time.time() - inicio
-        
-        progress_bar.progress(80)
-        status_text.text("Registrando log de ingestão...")
-        time.sleep(0.2)
-        
-        arquivo_nome = st.session_state.get("nome_arquivo", "arquivo_desconhecido.csv")
-        script_id = st.session_state.get("script_id_cache", None)
-        usou_ia = script_id is not None
-        
-        registrar_log_ingestao(arquivo_nome=arquivo_nome, registros_total=resultado.get("total_registros", 0),
-                               registros_sucesso=resultado.get("registros_inseridos", 0),
-                               registros_erro=len(resultado.get("erros", [])) - resultado.get("registros_duplicados", 0),
-                               usou_ia=usou_ia, script_id=script_id, duracao_segundos=duracao)
-        
-        progress_bar.progress(100)
-        status_text.text("Inserção concluída!")
-        time.sleep(0.5)
-        
-        st.session_state["resultado_insercao"] = resultado
-        st.session_state["duracao_insercao"] = duracao
-        st.session_state["insercao_concluida"] = True
-        
-        progress_bar.empty()
-        status_text.empty()
-        
-        st.rerun()
-        
-    except Exception as e:
-        progress_bar.empty()
-        status_text.empty()
-        st.error(f"Erro durante a inserção: {str(e)}")
-        st.exception(e)
-        st.stop()
-
-if not st.session_state.get("insercao_concluida", False):
-    st.subheader("Confirmar Inserção")
-    st.warning("Esta ação irá inserir os dados no banco de dados. Certifique-se de que os dados estão corretos.")
-    
-    col_confirmar, col_voltar = st.columns([1, 1])
-    
-    with col_confirmar:
-        if st.button("Confirmar e Inserir no Banco", type="primary", width='stretch'):
-            st.session_state["confirmar_insercao"] = True
-            st.rerun()
-    
-    with col_voltar:
-        if st.button("Voltar para Correção", width='stretch'):
-            st.switch_page("pages/2_Correção_IA.py")
-    
-    st.divider()
-
-if st.session_state.get("insercao_concluida", False):
-    if st.button("Voltar para Início", type="primary", width='stretch'):
-        # Limpar todo o session_state para permitir novo upload
-        keys_to_clear = [
-            "df_original", "df_corrigido", "validacao_aprovada",
-            "resultado_validacao", "erros_validacao", "codigo_correcao_gerado",
-            "hash_atual", "usou_cache_flag", "resultado_insercao",
-            "duracao_insercao", "insercao_concluida", "confirmar_insercao",
-            "sem_modficadoes_necessarias"
-        ]
-        for key in keys_to_clear:
-            if key in st.session_state:
-                del st.session_state[key]
-        
+    if st.button("Finalizar e Voltar ao Início", type="primary", width='stretch'):
+        limpar_sessao_para_inicio()
         st.switch_page("main.py")
-else:
-    if st.button("Voltar para Início", width='stretch'):
-        st.switch_page("main.py")
-
