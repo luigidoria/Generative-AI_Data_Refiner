@@ -3,13 +3,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from typing import Dict, Any
-
-
-def carregar_template() -> Dict:
-    template_path = Path(__file__).parent.parent.parent / "database" / "template.json"
-    with open(template_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
-
+from app.utils import carregar_template
 
 def normalizar_status(valor: Any, template: Dict) -> str:
     if pd.isna(valor) or valor is None:

@@ -191,7 +191,6 @@ if executar_script:
                 col_a, col_b, col_c = st.columns([1, 2, 1])
                 with col_b:
                     st.button("Solicitar Nova Correção via IA", type="secondary", width='stretch', on_click=new_correction, args=(codigo_correcao, resultado_revalidacao, df_corrigido))
-                    print("aa")
         
         finally:
             os.remove(tmp_path)
