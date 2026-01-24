@@ -131,7 +131,7 @@ else:
     with col1:
         st.warning("Revise o código antes de executar!")
     with col2:
-        executar_script = st.button("Executar Código", type="primary", use_container_width=True)
+        executar_script = st.button("Executar Código", type="primary", width='stretch')
 
 if executar_script:
     try:
@@ -189,7 +189,7 @@ if executar_script:
                 
                 col_a, col_b, col_c = st.columns([1, 2, 1])
                 with col_b:
-                    st.button("Solicitar Nova Correção via IA", type="secondary", use_container_width=True, on_click=new_correction, args=(codigo_correcao, resultado_revalidacao, df_corrigido))
+                    st.button("Solicitar Nova Correção via IA", type="secondary", width='stretch', on_click=new_correction, args=(codigo_correcao, resultado_revalidacao, df_corrigido))
                     print("aa")
         
         finally:
@@ -202,13 +202,13 @@ if executar_script:
         st.error(f"Erro ao executar: {str(e)}")
         col_a, col_b, col_c = st.columns([1, 2, 1])
         with col_b:
-            st.button("Solicitar Nova Correção via IA", type="secondary", use_container_width=True, on_click=new_correction, args=(codigo_correcao, resultado_validacao, df))
+            st.button("Solicitar Nova Correção via IA", type="secondary", width='stretch', on_click=new_correction, args=(codigo_correcao, resultado_validacao, df))
                 
 
 if "validacao_aprovada" in st.session_state and st.session_state["validacao_aprovada"]:
     col_nav1, col_nav2, col_nav3 = st.columns([1, 1, 1])
     with col_nav2:
-        if st.button("Inserir no Banco de Dados", type="primary", use_container_width=True, key="nav_insert"):
+        if st.button("Inserir no Banco de Dados", type="primary", width='stretch', key="nav_insert"):
             st.switch_page("pages/3_Inserção_Banco.py")
 
 
@@ -216,5 +216,5 @@ st.divider()
 
 col1, col2, col3 = st.columns([1, 2, 1])
 with col1:
-    if st.button("Voltar para Upload", use_container_width=True):
+    if st.button("Voltar para Upload", width='stretch'):
         st.switch_page("main.py")

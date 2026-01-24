@@ -62,7 +62,7 @@ if not st.session_state.get("insercao_concluida", False):
     num_preview = min(10, len(df_corrigido))
     st.dataframe(
         df_corrigido.head(num_preview),
-        use_container_width=True,
+        width='stretch',
         hide_index=False
     )
     
@@ -128,7 +128,7 @@ else:
                 duplicados_df = pd.DataFrame(erros_duplicados)
                 st.dataframe(
                     duplicados_df,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
@@ -144,7 +144,7 @@ else:
                 erros_df = pd.DataFrame(erros_outros)
                 st.dataframe(
                     erros_df,
-                    use_container_width=True,
+                    width='stretch',
                     hide_index=True,
                     column_config={
                         "linha": st.column_config.NumberColumn("Linha CSV", width="small"),
@@ -220,18 +220,18 @@ if not st.session_state.get("insercao_concluida", False):
     col_confirmar, col_voltar = st.columns([1, 1])
     
     with col_confirmar:
-        if st.button("Confirmar e Inserir no Banco", type="primary", use_container_width=True):
+        if st.button("Confirmar e Inserir no Banco", type="primary", width='stretch'):
             st.session_state["confirmar_insercao"] = True
             st.rerun()
     
     with col_voltar:
-        if st.button("Voltar para Correção", use_container_width=True):
+        if st.button("Voltar para Correção", width='stretch'):
             st.switch_page("pages/2_Correção_IA.py")
     
     st.divider()
 
 if st.session_state.get("insercao_concluida", False):
-    if st.button("Voltar para Início", type="primary", use_container_width=True):
+    if st.button("Voltar para Início", type="primary", width='stretch'):
         # Limpar todo o session_state para permitir novo upload
         keys_to_clear = [
             "df_original", "df_corrigido", "validacao_aprovada",
@@ -246,6 +246,6 @@ if st.session_state.get("insercao_concluida", False):
         
         st.switch_page("main.py")
 else:
-    if st.button("Voltar para Início", use_container_width=True):
+    if st.button("Voltar para Início", width='stretch'):
         st.switch_page("main.py")
 
