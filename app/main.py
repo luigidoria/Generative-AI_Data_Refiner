@@ -48,9 +48,14 @@ for key, value in state_padroes.items():
 if not st.session_state["banco_dados"]:
     init_database()
     st.session_state["banco_dados"] = True
-    
+
 def rest_all_states():
+    db_status = st.session_state.get("banco_dados", False)
     st.session_state.clear()
+    st.session_state["banco_dados"] = db_status
+    for key, value in state_padroes.items():
+        if key != "banco_dados":
+            st.session_state[key] = value
 
 st.title("Portal de Ingestão de Transações")
 st.divider()
