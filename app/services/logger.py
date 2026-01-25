@@ -38,3 +38,31 @@ def init_logger_table():
 
 def calcular_hash(bytes_arquivo):
     return hashlib.sha256(bytes_arquivo).hexdigest()
+
+
+def salvar_log_no_banco(dados_log):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO monitoramento_processamento 
+            (arquivo_hash, arquivo_nome, usou_ia, tokens_gastos, status, 
+             etapa_final, tipo_erro, mensagem_erro, duracao_segundos)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            dados_log.get("hash"),
+            dados_log.get("nome"),
+            dados_log.get("usou_ia", False),
+            dados_log.get("tokens", 0),
+            dados_log.get("status"),
+            dados_log.get("etapa"),
+            dados_log.get("tipo_erro"),
+            dados_log.get("mensagem_erro"),
+            dados_log.get("duracao", 0.0)
+        ))
+        
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao salvar log no banco: {e}")
