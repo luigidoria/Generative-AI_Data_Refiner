@@ -66,9 +66,7 @@ total_tokens = df['tokens_gastos'].sum()
 qtd_cache = len(df[df['origem_correcao'] == 'CACHE'])
 taxa_cache = (qtd_cache / total_arquivos * 100) if total_arquivos > 0 else 0
 
-media_tokens_ia = df[df['origem_correcao'] == 'IA']['tokens_gastos'].mean()
-if pd.isna(media_tokens_ia): media_tokens_ia = 0
-tokens_economizados = qtd_cache * media_tokens_ia
+tokens_economizados = df['tokens_economizados'].sum()   
 
 kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
@@ -79,7 +77,7 @@ with kpi2:
 with kpi3:
     st.metric("Uso do Cache", f"{qtd_cache}", delta=f"{taxa_cache:.1f}% do Total")
 with kpi4:
-    st.metric("Tokens Economizados (Est.)", f"{tokens_economizados:,.0f}".replace(",", "."))
+    st.metric("Tokens Economizados", f"{tokens_economizados:,.0f}".replace(",", "."))
 
 st.divider()
 

@@ -23,7 +23,8 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
             hash_estrutura,
             script_cache["id"],
             script_cache["vezes_utilizado"],
-            0
+            0,
+            script_cache.get("custo_tokens", 0)
         )
     
     env_path = Path(__file__).parent.parent / "secrets.env"
@@ -153,7 +154,7 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
             }
         ],
         temperature=0.3,
-        max_tokens=2048,
+        max_tokens=4096,
     )
 
     tokens_gastos = 0
@@ -169,7 +170,8 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
         hash_estrutura,
         None,
         0,
-        tokens_gastos
+        tokens_gastos,
+        0
     )
 
 def new_correction(codigo_correcao, resultado_revalidacao, df_corrigido):

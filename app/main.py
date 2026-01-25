@@ -7,6 +7,7 @@ from utils.ui_components import formatar_titulo_erro
 from utils.session_manager import rest_all_states
 from utils.data_handler import processar_arquivo
 from services.logger import init_logger_table, iniciar_monitoramento
+from services.script_cache import init_script_costs_table
 
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",
@@ -39,6 +40,7 @@ for key, value in state_padroes.items():
 if not st.session_state["banco_dados"]:
     init_database()
     init_logger_table()
+    init_script_costs_table()
     st.session_state["banco_dados"] = True
 
 

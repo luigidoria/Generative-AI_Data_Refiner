@@ -99,15 +99,16 @@ if "codigo_gerado" not in st.session_state:
     st.info("Gerando script de correção...")
     with st.spinner("IA analisando os erros e gerando código de correção..."):
         try:
-            codigo_correcao, usou_cache, hash_estrutura, script_id_cache, vezes_utilizado, tokens_gastos = gerar_codigo_correcao_ia(df, resultado_validacao)
+            codigo_correcao, usou_cache, hash_estrutura, script_id_cache, vezes_utilizado, tokens_gastos, tokens_economizados = gerar_codigo_correcao_ia(df, resultado_validacao)
 
             fonte = "CACHE" if usou_cache else "IA"
-            atualizar_uso_ia(tokens=tokens_gastos, fonte=fonte)
+            atualizar_uso_ia(tokens=tokens_gastos, fonte=fonte, tokens_economizados=tokens_economizados)
             
             st.session_state["codigo_gerado"] = codigo_correcao
             st.session_state["usou_cache"] = usou_cache
             st.session_state["hash_estrutura"] = hash_estrutura
             st.session_state["vezes_utilizado"] = vezes_utilizado
+            st.session_state["tokens_gastos"] = tokens_gastos
 
             if usou_cache:
                 st.session_state["script_id_cache"] = script_id_cache
@@ -176,7 +177,15 @@ if executar_script:
                 
                 if not usou_cache:
                     tipos_erros = [erro.get("tipo") for erro in resultado_validacao["detalhes"]]
-                    script_id = salvar_script_cache(hash_estrutura, codigo_correcao, f"Corrige: {', '.join(tipos_erros)}")
+                    tokens_gastos_salvar = st.session_state.get("tokens_gastos", 0)
+                    
+                    script_id = salvar_script_cache(
+                        hash_estrutura, 
+                        codigo_correcao, 
+                        f"Corrige: {', '.join(tipos_erros)}",
+                        tokens=tokens_gastos_salvar
+                    )
+                    
                     st.session_state["script_id_cache"] = script_id
                     st.info("Script validado e salvo no cache para uso futuro!")
                 
