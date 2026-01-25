@@ -47,7 +47,6 @@ with st.sidebar:
     if st.button(texto_botao, width='stretch'):
         st.switch_page(origem_atual)
 
-st.title("Monitoramento de Performance")
 st.markdown("Visão geral da eficiência do processamento e custos.")
 st.divider()
 
