@@ -43,7 +43,6 @@ def buscar_script_cache(hash_estrutura: str) -> Optional[dict]:
     resultado = cursor.fetchone()
     
     if resultado:
-        # Incrementar contador de uso e atualizar timestamp
         cursor.execute(
             """
             UPDATE scripts_transformacao 

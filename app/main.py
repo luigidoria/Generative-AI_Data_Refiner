@@ -1,21 +1,9 @@
 import streamlit as st
 import pandas as pd
-import os
-import tempfile
-import json
-import sys
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.validation import (
-    detectar_encoding,
-    detectar_delimitador,
-    validar_csv_completo
-)
 from services.database import init_database
 
-from utils import formatar_titulo_erro
+from utils import formatar_titulo_erro, rest_all_states, processar_arquivo
 
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",
@@ -31,24 +19,24 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-if "df" not in st.session_state:
-    st.session_state["df"] = None
-if "encoding" not in st.session_state:
-    st.session_state["encoding"] = None
-if "delimitador" not in st.session_state:
-    st.session_state["delimitador"] = None
-if "resultado_validacao" not in st.session_state:
-    st.session_state["resultado_validacao"] = None
-if "nome_arquivo" not in st.session_state:
-    st.session_state["nome_arquivo"] = None
-if "banco_dados" not in st.session_state:
+state_padroes = {
+    "df": None,
+    "encoding": None,
+    "delimitador": None,
+    "resultado_validacao": None,
+    "nome_arquivo": None,
+    "sem_modficadoes_necessarias": False,
+    "banco_dados": False
+}
+
+for key, value in state_padroes.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
+if not st.session_state["banco_dados"]:
     init_database()
     st.session_state["banco_dados"] = True
-if "sem_modficadoes_necessarias" not in st.session_state:
-    st.session_state["sem_modficadoes_necessarias"] = False
 
-def rest_all_states():
-    st.session_state.clear()
 
 st.title("Portal de Ingestão de Transações")
 st.divider()
@@ -66,7 +54,7 @@ container = st.container(border=True)
 with container:
     st.markdown("### Upload de Arquivos")
     st.info("Faça o upload dos seus arquivos financeiros (CSV) para validação e correção automática via IA.")
-    uploaded_file = st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed", on_change=rest_all_states)
+    uploaded_file = st.file_uploader("Selecione o arquivo", type=["csv"], label_visibility="collapsed", on_change=rest_all_states, args=(state_padroes,))
     if (uploaded_file is not None or (
                 st.session_state["df"] is not None 
                 and st.session_state["encoding"] is not None 
@@ -79,33 +67,19 @@ with container:
         
         st.session_state["sem_modficadoes_necessarias"] = False
 
-        if uploaded_file is not None:    
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp_file:
-                tmp_file.write(uploaded_file.getbuffer())
-                tmp_path = tmp_file.name
+        if uploaded_file is not None:
+            if st.session_state["df"] is None:    
+                try:
+                    df, encoding_detectado, delimitador_detectado, resultado_validacao = processar_arquivo(uploaded_file)
 
-            try:
-                encoding_detectado = detectar_encoding(tmp_path)
-                delimitador_detectado = detectar_delimitador(tmp_path)
-
-                df = pd.read_csv(tmp_path, encoding=encoding_detectado, sep=delimitador_detectado)
-                qtd_linhas, qtd_colunas = df.shape
-
-                with open("database/template.json", "r") as f:
-                    template_validacao = json.load(f)
-                
-                resultado_validacao = validar_csv_completo(tmp_path, template_validacao)
-
-                st.session_state["df"] = df
-                st.session_state["encoding"] = encoding_detectado
-                st.session_state["delimitador"] = delimitador_detectado
-                st.session_state["nome_arquivo"] = uploaded_file.name
-                st.session_state["resultado_validacao"] = resultado_validacao
-            except Exception as e:
-                st.error(f"Erro ao processar o arquivo: {e}")
-            finally:
-                os.remove(tmp_path)
-        else:
+                    st.session_state["df"] = df
+                    st.session_state["encoding"] = encoding_detectado
+                    st.session_state["delimitador"] = delimitador_detectado
+                    st.session_state["nome_arquivo"] = uploaded_file.name
+                    st.session_state["resultado_validacao"] = resultado_validacao
+                except Exception as e:
+                    st.error(f"Erro ao processar o arquivo: {e}")
+        if st.session_state["df"] is not None:
             df = st.session_state["df"]
             encoding_detectado = st.session_state["encoding"]
             delimitador_detectado = st.session_state["delimitador"]
@@ -115,67 +89,67 @@ with container:
             st.info(f"Usando dados do arquivo {uploaded_file_name}.")
 
 
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Linhas", qtd_linhas)
-        m2.metric("Colunas", qtd_colunas)
-        m3.metric("Delimitador", f"{delimitador_detectado}")
-        m4.metric("Encoding", encoding_detectado)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Linhas", qtd_linhas)
+            m2.metric("Colunas", qtd_colunas)
+            m3.metric("Delimitador", f"{delimitador_detectado}")
+            m4.metric("Encoding", encoding_detectado)
 
-        with st.expander("Visualizar Dados Brutos (Primeiras 5 linhas)", expanded=False):
-            st.dataframe(df.head())
+            with st.expander("Visualizar Dados Brutos (Primeiras 5 linhas)", expanded=False):
+                st.dataframe(df.head())
 
-        st.subheader("Diagnóstico de Validação")
-        if resultado_validacao["valido"]:
-            st.success("O arquivo é válido e segue o padrão esperado!")
-            button_insert = st.button("Iniciar Ingestão no Banco de Dados", type="primary")
-            if button_insert:
-                st.session_state["df_corrigido"] = df
-                st.session_state["validacao_aprovada"] = True
-                st.session_state["sem_modficadoes_necessarias"] = True
-                st.switch_page("pages/3_Inserção_Banco.py")
-        else:
-            
-            st.error(f"O arquivo contém {resultado_validacao['total_erros']} divergência(s) que precisam ser corrigidas.")
-            
-            st.divider()
-            st.subheader("Relatório de Divergências")
-
-            for i, erro in enumerate(resultado_validacao["detalhes"]):
+            st.subheader("Diagnóstico de Validação")
+            if resultado_validacao["valido"]:
+                st.success("O arquivo é válido e segue o padrão esperado!")
+                button_insert = st.button("Iniciar Ingestão no Banco de Dados", type="primary")
+                if button_insert:
+                    st.session_state["df_corrigido"] = df
+                    st.session_state["validacao_aprovada"] = True
+                    st.session_state["sem_modficadoes_necessarias"] = True
+                    st.switch_page("pages/3_Inserção_Banco.py")
+            else:
                 
-                with st.expander(f"Erro #{i+1}: {formatar_titulo_erro(erro.get('tipo'))}", expanded=False):
+                st.error(f"O arquivo contém {resultado_validacao['total_erros']} divergência(s) que precisam ser corrigidas.")
+                
+                st.divider()
+                st.subheader("Relatório de Divergências")
+
+                for i, erro in enumerate(resultado_validacao["detalhes"]):
                     
-                    tipo_erro = erro.get("tipo")
-                    if tipo_erro == 'nomes_colunas':
-                        st.write("As colunas do arquivo não batem com o padrão esperado. O sistema identificou os seguintes nomes:")
+                    with st.expander(f"Erro #{i+1}: {formatar_titulo_erro(erro.get('tipo'))}", expanded=False):
+                        
+                        tipo_erro = erro.get("tipo")
+                        if tipo_erro == 'nomes_colunas':
+                            st.write("As colunas do arquivo não batem com o padrão esperado. O sistema identificou os seguintes nomes:")
 
-                        mapeamento = erro.get("mapeamento", {})
-                        if mapeamento:
-                            df_map = pd.DataFrame(list(mapeamento.items()), columns=["Coluna no Arquivo", "Coluna Esperada (Padrão)"])
-                            st.table(df_map)
+                            mapeamento = erro.get("mapeamento", {})
+                            if mapeamento:
+                                df_map = pd.DataFrame(list(mapeamento.items()), columns=["Coluna no Arquivo", "Coluna Esperada (Padrão)"])
+                                st.table(df_map)
+                            else:
+                                st.warning("Não foi possível sugerir um mapeamento automático.")
+
+                        elif tipo_erro == 'formato_valor':
+                            formato = erro.get("formato_detectado", "Desconhecido")
+                            st.markdown(f"**Problema:** Os valores monetários estão em um formato não padronizado.")
+                            st.markdown(f"**Detectado:** `{formato}` (Ex: 1.234,56)")
+                            st.markdown(f"**Esperado:** `Decimal` (Ex: 1234.56)")
+
+                        elif tipo_erro == 'formato_data':
+                            formato = erro.get("formato_detectado", "Desconhecido")
+                            st.markdown(f"**Problema:** As datas não estão no padrão do banco de dados.")
+                            st.markdown(f"**Detectado:** `{formato}`")
+                            st.markdown(f"**Esperado:** `YYYY-MM-DD`")
+
+                        elif tipo_erro == 'colunas_faltando':
+                            colunas = erro.get("colunas", [])
+                            st.error(f"Estão faltando as seguintes colunas obrigatórias: {', '.join(colunas)}")
+
                         else:
-                            st.warning("Não foi possível sugerir um mapeamento automático.")
+                            st.write(erro)
 
-                    elif tipo_erro == 'formato_valor':
-                        formato = erro.get("formato_detectado", "Desconhecido")
-                        st.markdown(f"**Problema:** Os valores monetários estão em um formato não padronizado.")
-                        st.markdown(f"**Detectado:** `{formato}` (Ex: 1.234,56)")
-                        st.markdown(f"**Esperado:** `Decimal` (Ex: 1234.56)")
-
-                    elif tipo_erro == 'formato_data':
-                        formato = erro.get("formato_detectado", "Desconhecido")
-                        st.markdown(f"**Problema:** As datas não estão no padrão do banco de dados.")
-                        st.markdown(f"**Detectado:** `{formato}`")
-                        st.markdown(f"**Esperado:** `YYYY-MM-DD`")
-
-                    elif tipo_erro == 'colunas_faltando':
-                        colunas = erro.get("colunas", [])
-                        st.error(f"Estão faltando as seguintes colunas obrigatórias: {', '.join(colunas)}")
-
-                    else:
-                        st.write(erro)
-
-            st.divider()
-            if st.button("Solicitar Correção via IA", type="primary"):
-                st.session_state["arquivo_erros"] = resultado_validacao
-                st.session_state["df_original"] = df
-                st.switch_page("pages/2_Correção_IA.py")
+                st.divider()
+                if st.button("Solicitar Correção via IA", type="primary"):
+                    st.session_state["arquivo_erros"] = resultado_validacao
+                    st.session_state["df_original"] = df
+                    st.switch_page("pages/2_Correção_IA.py")

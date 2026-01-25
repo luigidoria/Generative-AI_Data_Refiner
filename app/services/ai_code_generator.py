@@ -6,7 +6,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from app.services.script_cache import gerar_hash_estrutura, buscar_script_cache
-from app.utils import formatar_titulo_erro
+from app.utils import formatar_titulo_erro, carregar_template
 
 
 def gerar_codigo_correcao_ia(df, resultado_validacao):
@@ -36,8 +36,7 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
         api_key=GROQ_API_KEY
     )
     
-    with open("database/template.json", "r", encoding="utf-8") as f:
-        template = json.load(f)
+    template = carregar_template()
     
     colunas_validas = []
     for nome_col, config in template["colunas"].items():
@@ -151,7 +150,7 @@ def gerar_codigo_correcao_ia(df, resultado_validacao):
                 "content": prompt
             }
         ],
-        temperature=0.5,
+        temperature=0.3,
         max_tokens=2048,
     )
     
