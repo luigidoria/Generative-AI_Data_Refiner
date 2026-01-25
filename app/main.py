@@ -3,7 +3,9 @@ import pandas as pd
 
 from services.database import init_database
 
-from utils import formatar_titulo_erro, rest_all_states, processar_arquivo
+from utils.ui_components import formatar_titulo_erro
+from utils.session_manager import rest_all_states
+from utils.data_handler import processar_arquivo
 
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",

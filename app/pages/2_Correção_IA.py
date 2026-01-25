@@ -9,10 +9,10 @@ import tempfile
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
                     
 from src.validation import validar_csv_completo
-from app.utils import formatar_titulo_erro
+from app.utils.ui_components import formatar_titulo_erro
 from app.services.script_cache import salvar_script_cache
 from app.services.ai_code_generator import gerar_codigo_correcao_ia, new_correction
-from app.utils import carregar_template
+from app.utils.data_handler import carregar_template
 
 st.set_page_config(
     page_title="Franq | Correção IA",

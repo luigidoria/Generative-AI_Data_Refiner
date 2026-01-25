@@ -3,7 +3,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from typing import Dict, Any
-from app.utils import carregar_template
+from app.utils.data_handler import carregar_template
 
 def normalizar_valor(valor: Any, tipo_coluna: str, template: Dict) -> str:
     if pd.isna(valor) or valor is None:

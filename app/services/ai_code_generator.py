@@ -6,7 +6,8 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from app.services.script_cache import gerar_hash_estrutura, buscar_script_cache
-from app.utils import formatar_titulo_erro, carregar_template
+from app.utils.data_handler import carregar_template
+from app.utils.ui_components import formatar_titulo_erro
 
 
 def gerar_codigo_correcao_ia(df, resultado_validacao):
