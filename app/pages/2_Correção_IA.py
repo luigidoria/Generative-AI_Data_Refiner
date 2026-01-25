@@ -22,6 +22,7 @@ st.set_page_config(
 )
 
 with st.sidebar:
+
     st.markdown("""
     **Como funciona:**
     1. Suba o arquivo CSV.
@@ -29,6 +30,12 @@ with st.sidebar:
     3. A IA corrige erros automaticamente.
     4. Dados corrigidos são inseridos no banco.
     """)
+
+    st.divider() 
+    if st.button("Ver Dashboard", use_container_width=True):
+        st.session_state["pagina_anterior"] = "pages/2_Correção_IA.py"
+        st.switch_page("pages/4_Dashboard.py")
+    
 
 st.markdown("""
     <style>

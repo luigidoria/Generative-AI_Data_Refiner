@@ -54,6 +54,12 @@ with st.sidebar:
     4. Dados corrigidos são inseridos no banco.
     """)
 
+    st.divider()
+    if st.button("Ver Dashboard", use_container_width=True):
+        st.session_state["pagina_anterior"] = "main.py"
+        st.switch_page("pages/4_Dashboard.py")
+    
+
 container = st.container(border=True)
 with container:
     st.markdown("### Upload de Arquivos")

@@ -31,6 +31,12 @@ with st.sidebar:
     2. Confirme a inserção no banco.
     3. Visualize o relatório de status.
     """)
+    
+    st.divider()
+    if st.button("Ver Dashboard", use_container_width=True):
+        st.session_state["pagina_anterior"] = "pages/3_Inserção_Banco.py"
+        st.switch_page("pages/4_Dashboard.py")
+    
 
 
 st.title("Inserção no Banco de Dados")
