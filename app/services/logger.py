@@ -3,6 +3,7 @@ import hashlib
 import streamlit as st
 from datetime import datetime
 from pathlib import Path
+import pandas as pd
 
 DB_PATH = Path(__file__).parent.parent.parent / "database" / "transacoes.db"
 
@@ -18,6 +19,7 @@ def init_logger_table():
                 arquivo_nome TEXT NOT NULL,
                 origem_correcao TEXT CHECK (origem_correcao IN ('IA', 'CACHE', 'NENHUMA')),
                 tokens_gastos INTEGER DEFAULT 0,
+                tokens_economizados INTEGER DEFAULT 0,
                 tentativas_ia INTEGER DEFAULT 0,
                 registros_inseridos INTEGER DEFAULT 0,
                 registros_duplicados INTEGER DEFAULT 0,
@@ -51,15 +53,16 @@ def salvar_log_no_banco(dados_log):
         
         cursor.execute("""
             INSERT INTO monitoramento_processamento 
-            (arquivo_hash, arquivo_nome, origem_correcao, tokens_gastos, tentativas_ia,
+            (arquivo_hash, arquivo_nome, origem_correcao, tokens_gastos, tokens_economizados, tentativas_ia,
              registros_inseridos, registros_duplicados, registros_erros, status, 
              etapa_final, tipo_erro, mensagem_erro, duracao_segundos)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             dados_log.get("hash"),
             dados_log.get("nome"),
             dados_log.get("origem_correcao", "NENHUMA"),
             dados_log.get("tokens", 0),
+            dados_log.get("tokens_economizados", 0),
             dados_log.get("tentativas_ia", 0),
             dados_log.get("inseridos", 0),      
             dados_log.get("duplicados", 0),  
@@ -76,14 +79,15 @@ def salvar_log_no_banco(dados_log):
     except Exception as e:
         print(f"Erro ao salvar log no banco: {e}")
 
-def atualizar_uso_ia(tokens, fonte):
+def atualizar_uso_ia(tokens, fonte, tokens_economizados=0):
     if "log_atual" in st.session_state:
         log = st.session_state["log_atual"]
         log["tokens"] = log.get("tokens", 0) + tokens
+        log["tokens_economizados"] = log.get("tokens_economizados", 0) + tokens_economizados
         log["origem_correcao"] = fonte
         log["etapa"] = "GERACAO_SCRIPT"
         if fonte == 'IA':
-                log["tentativas_ia"] = log.get("tentativas_ia", 0) + 1
+            log["tentativas_ia"] = log.get("tentativas_ia", 0) + 1
 
 def iniciar_monitoramento(uploaded_file):
     if "log_atual" in st.session_state:
@@ -102,8 +106,9 @@ def iniciar_monitoramento(uploaded_file):
         "hash": arquivo_hash,
         "nome": uploaded_file.name,
         "inicio": datetime.now(),
-        "origem_correcao": "NENHUMA", # Assume que está limpo até provar o contrário
+        "origem_correcao": "NENHUMA",
         "tokens": 0,
+        "tokens_economizados": 0,
         "tentativas_ia": 0,
         "inseridos": 0,
         "duplicados": 0,
@@ -124,7 +129,7 @@ def registrar_erro(etapa, tipo_erro, mensagem_erro):
         log["duracao"] = (datetime.now() - log["inicio"]).total_seconds()
         
         salvar_log_no_banco(log)
-        
+
         del st.session_state["log_atual"]
 
 def registrar_conclusao(inseridos, duplicados, erros):
@@ -140,3 +145,26 @@ def registrar_conclusao(inseridos, duplicados, erros):
         salvar_log_no_banco(log)
         
         del st.session_state["log_atual"]
+
+def carregar_dados():
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        query = """
+            SELECT 
+                id, arquivo_nome, origem_correcao, 
+                tokens_gastos, tokens_economizados, tentativas_ia,
+                registros_inseridos, registros_duplicados, registros_erros, status, 
+                etapa_final, tipo_erro, duracao_segundos, created_at
+            FROM monitoramento_processamento
+            ORDER BY created_at DESC
+        """
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        
+        
+        df['created_at'] = pd.to_datetime(df['created_at'])
+        return df
+    except Exception as e:
+        st.error(f"Erro ao conectar no banco: {e}")
+        return pd.DataFrame()

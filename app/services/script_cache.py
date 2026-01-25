@@ -7,6 +7,24 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
+def init_script_costs_table():
+    db_path = Path(__file__).parent.parent.parent / "database" / "transacoes.db"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS script_costs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            script_id INTEGER,
+            custo_tokens INTEGER DEFAULT 0,
+            FOREIGN KEY(script_id) REFERENCES scripts_transformacao(id)
+        )
+    """)
+    
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_costs_script_id ON script_costs(script_id)")
+    
+    conn.commit()
+    conn.close()
 
 def gerar_hash_estrutura(colunas: list, erros: list) -> str:
     colunas_ordenadas = sorted(colunas)
@@ -36,7 +54,16 @@ def buscar_script_cache(hash_estrutura: str) -> Optional[dict]:
     cursor = conn.cursor()
     
     cursor.execute(
-        "SELECT id, script_python, vezes_utilizado FROM scripts_transformacao WHERE hash_estrutura = ?",
+        """
+        SELECT 
+            s.id, 
+            s.script_python, 
+            s.vezes_utilizado,
+            COALESCE(c.custo_tokens, 0) as custo_tokens
+        FROM scripts_transformacao s
+        LEFT JOIN script_costs c ON s.id = c.script_id
+        WHERE s.hash_estrutura = ?
+        """,
         (hash_estrutura,)
     )
     
@@ -57,7 +84,8 @@ def buscar_script_cache(hash_estrutura: str) -> Optional[dict]:
         script_info = {
             "id": resultado["id"],
             "script": resultado["script_python"],
-            "vezes_utilizado": resultado["vezes_utilizado"] + 1
+            "vezes_utilizado": resultado["vezes_utilizado"] + 1,
+            "custo_tokens": resultado["custo_tokens"]
         }
         conn.close()
         return script_info
@@ -65,23 +93,35 @@ def buscar_script_cache(hash_estrutura: str) -> Optional[dict]:
     conn.close()
     return None
 
-
-def salvar_script_cache(hash_estrutura: str, script: str, descricao: str = None) -> int:
+def salvar_script_cache(hash_estrutura: str, script: str, descricao: str = None, tokens: int = 0) -> int:
     db_path = Path(__file__).parent.parent.parent / "database" / "transacoes.db"
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
-    cursor.execute(
-        """
-        INSERT INTO scripts_transformacao (hash_estrutura, script_python, descricao)
-        VALUES (?, ?, ?)
-        """,
-        (hash_estrutura, script, descricao)
-    )
-    
-    script_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
-    return script_id
+    try:
+        cursor.execute(
+            """
+            INSERT INTO scripts_transformacao (hash_estrutura, script_python, descricao)
+            VALUES (?, ?, ?)
+            """,
+            (hash_estrutura, script, descricao)
+        )
+        
+        script_id = cursor.lastrowid
+        
+        cursor.execute(
+            """
+            INSERT INTO script_costs (script_id, custo_tokens)
+            VALUES (?, ?)
+            """,
+            (script_id, tokens)
+        )
+        
+        conn.commit()
+        return script_id
+    except Exception as e:
+        print(f"Erro ao salvar script: {e}")
+        return None
+    finally:
+        conn.close()

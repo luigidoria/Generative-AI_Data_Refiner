@@ -32,6 +32,12 @@ with st.sidebar:
     3. Visualize o relatório de status.
     """)
 
+    st.divider()
+    if st.button("Ver Dashboard", width='stretch'):
+        st.session_state["pagina_anterior"] = "pages/3_Inserção_Banco.py"
+        st.switch_page("pages/4_Dashboard.py")
+    
+
 
 st.title("Inserção no Banco de Dados")
 st.divider()
