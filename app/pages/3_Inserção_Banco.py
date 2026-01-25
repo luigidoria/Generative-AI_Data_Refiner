@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from app.services.insert_data import inserir_transacoes, registrar_log_ingestao
 from app.utils.session_manager import limpar_sessao_para_inicio
 from app.utils.ui_components import exibir_preview, exibir_relatorio
+from app.services.logger import registrar_erro, registrar_conclusao
 
 st.set_page_config(
     page_title="Franq | Inserção no Banco",
@@ -79,6 +80,8 @@ if not st.session_state.get("insercao_concluida", False):
                     script_id=script_id,
                     duracao_segundos=duracao
                 )
+
+                registrar_conclusao()
                 
                 status.update(label="Processo concluído!", state="complete", expanded=False)
                 
@@ -88,6 +91,7 @@ if not st.session_state.get("insercao_concluida", False):
                 st.rerun()
 
             except Exception as e:
+                registrar_conclusao()
                 status.update(label="Erro crítico!", state="error")
                 st.error(f"Falha na inserção: {str(e)}")
                 st.stop()
