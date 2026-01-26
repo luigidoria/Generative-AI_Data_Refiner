@@ -8,7 +8,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.services.insert_data import inserir_transacoes
-from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_retorno_ia
+from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_retorno_ia, ir_para_dashboard
 
 st.set_page_config(
     page_title="Franq | Inserção no Banco",
@@ -65,7 +65,7 @@ if arquivo_atual is None:
             st.switch_page("main.py")
     with col2:
         if st.button("Ir para Dashboard", type="primary", width='stretch'):
-            st.switch_page("pages/4_Dashboard.py")
+            ir_para_dashboard()
     st.stop()
 
 st.progress(0, text=f"Arquivo: {arquivo_atual.nome}")

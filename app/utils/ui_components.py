@@ -95,3 +95,8 @@ def preparar_retorno_ia(arquivo, msg_erro):
         
     arquivo.status = "PENDENTE_CORRECAO"
     st.switch_page("pages/2_Correção_IA.py")
+
+def ir_para_dashboard():
+    st.session_state["fila_arquivos"] = []
+    st.session_state["pagina_anterior"] = "main.py"
+    st.switch_page("pages/4_Dashboard.py")
