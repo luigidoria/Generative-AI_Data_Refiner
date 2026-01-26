@@ -198,10 +198,10 @@ if st.session_state["fila_arquivos"]:
     
     with col_nav2:
         if pendentes > 0:
-            if st.button("Ir para Correção", type="primary", use_container_width=True):
+            if st.button("Ir para Correção", type="primary", width='stretch'):
                 st.session_state["indice_atual"] = 0
                 st.switch_page("pages/2_Correção_IA.py")
         
         elif total > 0:
-            if st.button("Ir para Inserção", type="primary", use_container_width=True):
+            if st.button("Ir para Inserção", type="primary", width='stretch'):
                 st.switch_page("pages/3_Inserção_Banco.py")

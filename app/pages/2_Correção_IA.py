@@ -63,10 +63,10 @@ if arquivo_atual is None:
     st.success("Todos os arquivos da fila foram processados!")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("Voltar para Lista", use_container_width=True):
+        if st.button("Voltar para Lista", width='stretch'):
             st.switch_page("main.py")
     with col2:
-        if st.button("Ir para Inserção no Banco", type="primary", use_container_width=True):
+        if st.button("Ir para Inserção no Banco", type="primary", width='stretch'):
             st.switch_page("pages/3_Inserção_Banco.py")
     st.stop()
 
@@ -141,7 +141,7 @@ else:
     st.code(codigo_atual, language="python")
     
     if session_key_exec not in st.session_state:
-        if st.button("Executar Código", type="primary", use_container_width=True):
+        if st.button("Executar Código", type="primary", width='stretch'):
             try:
                 local_ns = {"df": arquivo_atual.df_original.copy(), "pd": pd}
                 exec(codigo_atual, local_ns)
@@ -159,7 +159,7 @@ else:
         col_act1, col_act2 = st.columns([1, 1])
         
         with col_act1:
-            if st.button("Confirmar e Próximo", type="primary", use_container_width=True):
+            if st.button("Confirmar e Próximo", type="primary", width='stretch'):
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".csv", mode='w', encoding='utf-8') as tmp:
                     df_temp.to_csv(tmp.name, index=False)
                     tmp_path = tmp.name
@@ -196,7 +196,7 @@ else:
 
         with col_act2:
             if meta["fonte"] == "IA":
-                if st.button("Descartar e Gerar Novo Código", type="secondary", use_container_width=True):
+                if st.button("Descartar e Gerar Novo Código", type="secondary", width='stretch'):
                     del st.session_state[session_key_code]
                     del st.session_state[session_key_meta]
                     del st.session_state[session_key_exec] 
@@ -205,10 +205,10 @@ else:
 st.divider()
 
 button_col1, button_col2, button_col3 = st.columns(3)
-if button_col1.button("Voltar para Lista", use_container_width=True):
+if button_col1.button("Voltar para Lista", width='stretch'):
     st.switch_page("main.py")
 
-if button_col3.button("Pular este arquivo (Marcar como Falha)", type="secondary", use_container_width=True):
+if button_col3.button("Pular este arquivo (Marcar como Falha)", type="secondary", width='stretch'):
     arquivo_atual.status = "FALHA_MANUAL"
     
     arquivo_atual.logger.registrar_erro("GERACAO_SCRIPT", "Manual", "Usuario pulou o arquivo")
