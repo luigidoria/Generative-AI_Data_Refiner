@@ -72,7 +72,8 @@ if arquivo_atual is None:
     st.stop()
 
 total_files = len(st.session_state["fila_arquivos"])
-st.progress((idx_atual) / total_files, text=f"Processando arquivo {idx_atual + 1} de {total_files}: {arquivo_atual.nome}")
+st.subheader(f"Processando arquivo {idx_atual + 1} de {total_files}: {arquivo_atual.nome}")
+st.progress((idx_atual) / total_files)
 
 col_info1, col_info2, col_info3 = st.columns(3)
 col_info1.metric("Erros", arquivo_atual.validacao["total_erros"])
@@ -202,6 +203,7 @@ else:
                     
                     st.rerun()
                 except Exception as e:
+                    st.session_state[f"ignore_cache_{arquivo_atual.id}"] = True
                     st.error(f"Erro de Execução: {e}")
         
         with c_disc:
@@ -217,7 +219,7 @@ else:
         res_valid = st.session_state.get(session_key_valid, {"valido": False})
         
         if res_valid["valido"]:
-            st.success("Sucesso! O código corrigiu todos os erros.")
+            st.success("Sucesso! Código executado e validação aprovada.")
         else:
             st.error(f"O código foi executado, mas a validação ainda encontrou {res_valid.get('total_erros', '?')} erro(s).")
             
