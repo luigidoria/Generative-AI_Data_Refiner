@@ -109,7 +109,8 @@ if session_key_code not in st.session_state:
                 "tokens": 0, 
                 "econ": script_cache.get("custo_tokens", 0),
                 "fonte": "CACHE",
-                "vezes_utilizado": script_cache.get("vezes_utilizado", 0)
+                "vezes_utilizado": script_cache.get("vezes_utilizado", 0),
+                "script_id": script_cache["id"]
             }
             st.rerun()
     
@@ -154,7 +155,8 @@ if session_key_code not in st.session_state:
                     "hash": hash_est,
                     "tokens": tokens,
                     "econ": econ,
-                    "fonte": "IA" 
+                    "fonte": "IA",
+                    "script_id": s_id
                 }
                 
                 arquivo_atual.update_ia_stats(tokens, "IA", econ)
@@ -184,7 +186,7 @@ else:
         with c_exec:
             if st.button("Executar e Validar", type="primary", width='stretch'):
                 try:
-                    local_ns = {"df": arquivo_atual.df_original.copy(), "pd": pd, "np": np} # numpy fix
+                    local_ns = {"df": arquivo_atual.df_original.copy(), "pd": pd, "np": np} 
                     exec(codigo_atual, local_ns)
                     df_temp = local_ns["df"]
                     
@@ -236,15 +238,17 @@ else:
                     
                     if meta["fonte"] == "IA":
                         tipos_erros = [e.get("tipo") for e in arquivo_atual.validacao["detalhes"]]
-                        salvar_script_cache(
+                        script_id = salvar_script_cache(
                             meta["hash"], 
                             codigo_atual, 
                             f"Auto-fix: {tipos_erros}", 
                             tokens=meta["tokens"]
                         )
+                        arquivo_atual.script_id = script_id
                     
                     if meta["fonte"] == "CACHE":
                         arquivo_atual.update_ia_stats(0, "CACHE", meta["econ"])
+                        arquivo_atual.script_id = meta.get("script_id")
 
                     del st.session_state[session_key_code]
                     del st.session_state[session_key_meta]

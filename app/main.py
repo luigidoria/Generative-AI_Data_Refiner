@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 from services.database import init_database
 from utils.ui_components import formatar_titulo_erro
 from utils.file_session import FileSession
@@ -72,6 +73,7 @@ with container:
                 
                 try:
                     session = FileSession(arquivo, len(st.session_state["fila_arquivos"]) + i)
+                    session.timestamp_upload = time.time()
                     session.processar()
                     st.session_state["fila_arquivos"].append(session)
                     
