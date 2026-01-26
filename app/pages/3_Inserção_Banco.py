@@ -47,12 +47,16 @@ if "fila_arquivos" not in st.session_state or not st.session_state["fila_arquivo
 
 arquivo_atual = None
 
-for f in st.session_state["fila_arquivos"]:
+idx_atual = 0
+
+for i, f in enumerate(st.session_state["fila_arquivos"]):
     if f.status in ["PRONTO_VALIDO", "PRONTO_IA", "PRONTO_CACHE"]:
         arquivo_atual = f
+        idx_atual = i
         break
     if f.status == "CONCLUIDO" and not f.relatorio_visualizado:
         arquivo_atual = f
+        idx_atual = i
         break
 
 if arquivo_atual is None:
@@ -68,7 +72,9 @@ if arquivo_atual is None:
             ir_para_dashboard()
     st.stop()
 
-st.progress(0, text=f"Arquivo: {arquivo_atual.nome}")
+total_files = len(st.session_state["fila_arquivos"])
+st.subheader(f"Arquivo {idx_atual + 1} de {total_files}: {arquivo_atual.nome}")
+st.progress(idx_atual / total_files)
 
 if arquivo_atual.status == "CONCLUIDO":
     st.success(f"Processamento finalizado para: {arquivo_atual.nome}")
