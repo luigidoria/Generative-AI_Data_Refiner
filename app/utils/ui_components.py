@@ -58,11 +58,11 @@ def exibir_relatorio(resultado, duracao):
     c1, c2, c3 = st.columns(3)
     c1.metric("Total Processado", resultado.get("total_registros", 0))
     c2.metric("Inseridos", registros_inseridos)
-    c3.metric("Rejeitados (Erros/Duplicados)", len(erros_lista))
+    c3.metric("Rejeitados", len(erros_lista))
 
     c4, c5, c6 = st.columns(3)
-    c4.metric("Arquivo", st.session_state.get("nome_arquivo", "N/A"))
-    c5.metric("Script IA", "Utilizado" if st.session_state.get("script_id_cache") else "Não utilizado")
+    c4.metric("Arquivo", resultado.get("nome_arquivo", "N/A"))
+    c5.metric("Script IA", "Utilizado" if resultado.get("usou_ia", False) else "Não utilizado")
     c6.metric("Tempo", f"{duracao:.2f}s")
 
     st.divider()
