@@ -104,11 +104,16 @@ def salvar_script_cache(hash_estrutura: str, script: str, descricao: str = None,
             """
             INSERT INTO scripts_transformacao (hash_estrutura, script_python, descricao)
             VALUES (?, ?, ?)
+            ON CONFLICT(hash_estrutura) DO UPDATE SET
+                script_python = excluded.script_python,
+                descricao = excluded.descricao,
+                updated_at = CURRENT_TIMESTAMP
             """,
             (hash_estrutura, script, descricao)
         )
         
-        script_id = cursor.lastrowid
+        cursor.execute("SELECT id FROM scripts_transformacao WHERE hash_estrutura = ?", (hash_estrutura,))
+        script_id = cursor.fetchone()[0]
         
         cursor.execute(
             """
