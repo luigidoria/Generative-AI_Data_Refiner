@@ -140,10 +140,22 @@ with col_graf3:
 
 with col_graf4:
     st.subheader("Registros de Erros")
-    df_erros = df[df['status'] == 'FALHA']['tipo_erro'].value_counts()
+    
+    df_erros = df[df['status'] == 'FALHA']
     
     if not df_erros.empty:
-        st.bar_chart(df_erros, horizontal=True, color="#FF6B6B")
+        st.dataframe(
+            df_erros[['created_at', 'arquivo_nome', 'etapa_final', 'tipo_erro', 'mensagem_erro']],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "created_at": st.column_config.DatetimeColumn("Data", format="DD/MM/YYYY HH:mm"),
+                "arquivo_nome": "Arquivo",
+                "etapa_final": "Etapa",
+                "tipo_erro": "Tipo do Erro",
+                "mensagem_erro": st.column_config.TextColumn("Mensagem Detalhada", width="large")
+            }
+        )
     else:
         st.success("Nenhum erro registrado!")
 

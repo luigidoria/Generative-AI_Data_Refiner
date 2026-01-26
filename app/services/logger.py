@@ -50,7 +50,7 @@ def carregar_dados():
                 id, arquivo_nome, origem_correcao, 
                 tokens_gastos, tokens_economizados, tentativas_ia,
                 registros_inseridos, registros_duplicados, registros_erros, status, 
-                etapa_final, tipo_erro, duracao_segundos, created_at
+                etapa_final, tipo_erro, mensagem_erro, duracao_segundos, created_at
             FROM monitoramento_processamento
             ORDER BY created_at DESC
         """
