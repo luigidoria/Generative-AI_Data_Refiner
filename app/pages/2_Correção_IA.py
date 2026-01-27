@@ -112,6 +112,7 @@ if session_key_code not in st.session_state:
                 "vezes_utilizado": script_cache.get("vezes_utilizado", 0),
                 "script_id": script_cache["id"]
             }
+            arquivo_atual.update_ia_stats(0, "CACHE", script_cache.get("custo_tokens", 0))
             st.rerun()
     
     if session_key_error in st.session_state:
@@ -145,16 +146,19 @@ if session_key_code not in st.session_state:
                     ignorar_cache=ignorar_cache_flag
                 )
                 
+                fonte_real = "CACHE" if usou_cache else "IA"
+                
                 st.session_state[session_key_code] = codigo
                 st.session_state[session_key_meta] = {
                     "hash": hash_est,
                     "tokens": tokens,
                     "econ": econ,
-                    "fonte": "IA",
-                    "script_id": s_id
+                    "fonte": fonte_real,
+                    "script_id": s_id,
+                    "vezes_utilizado": qtd
                 }
                 
-                arquivo_atual.update_ia_stats(tokens, "IA", econ)
+                arquivo_atual.update_ia_stats(tokens, fonte_real, econ)
                 st.rerun()
                 
             except Exception as e:
@@ -242,7 +246,6 @@ else:
                         arquivo_atual.script_id = script_id
                     
                     if meta["fonte"] == "CACHE":
-                        arquivo_atual.update_ia_stats(0, "CACHE", meta["econ"])
                         arquivo_atual.script_id = meta.get("script_id")
 
                     del st.session_state[session_key_code]
