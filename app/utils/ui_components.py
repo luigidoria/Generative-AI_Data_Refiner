@@ -20,22 +20,19 @@ def exibir_preview(df):
         col3.metric("Valor Total", f"R$ {valor_total:,.2f}")
 
     st.divider()
-    st.subheader("Preview dos Dados")
-    st.info("Revise os dados abaixo antes de confirmar a inserção.")
+    st.caption("Visualização completa dos dados (role para ver mais):")
 
     st.dataframe(
-        df.head(10),
+        df,
         width='stretch',
+        height=400,
         hide_index=True,
         column_config={
             "valor": st.column_config.NumberColumn(
                 "Valor", format="R$ %.2f"
             )
         }
-    )
-    
-    if len(df) > 10:
-        st.caption(f"Mostrando 10 de {len(df)} registros.")
+    )    
     st.divider()
 
 def exibir_relatorio(resultado, duracao):
@@ -62,7 +59,10 @@ def exibir_relatorio(resultado, duracao):
 
     c4, c5, c6 = st.columns(3)
     c4.metric("Arquivo", resultado.get("nome_arquivo", "N/A"))
-    c5.metric("Script IA", "Utilizado" if resultado.get("usou_ia", False) else "Não utilizado")
+    
+    origem_script = resultado.get("origem_script", "Não utilizado")
+    c5.metric("Origem do Script", origem_script)
+    
     c6.metric("Tempo", f"{duracao:.2f}s")
 
     st.divider()

@@ -12,50 +12,43 @@ from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_r
 from services.auth_manager import AuthManager
 
 st.set_page_config(
-    page_title="Franq | Inserção no Banco",
-    page_icon=":bar_chart:",
+    page_title="Inserção no Banco",
     layout="wide"
 )
 
 st.markdown("""
     <style>
-        [data-testid="stSidebarNav"] { display: none; }
+        [data-testid="stSidebarNav"] {display: none;}
+        footer {visibility: hidden;}
+        .block-container {padding-top: 2rem;}
     </style>
 """, unsafe_allow_html=True)
-
 
 auth = AuthManager()
 auth.verificar_autenticacao()
 
 with st.sidebar:
-    st.markdown("""
-    **Como funciona:**
-    1. Suba os arquivos CSV.
-    2. O sistema valida os dados.
-    3. A IA corrige erros automaticamente.
-    4. Dados corrigidos são inseridos no banco.
-    """)
+    st.header("Navegação")
     
-    st.divider()
-    if st.button("Ver Dashboard", width='stretch'):
-        st.session_state["origem_dashboard"] = "pages/3_Inserção_Banco.py"
-        st.switch_page("pages/4_Dashboard.py")
+    # Alteração: Removido st.session_state["fila_arquivos"] = [] para não perder dados ao voltar
+    if st.button("Voltar para Início", width='stretch'):
+        st.switch_page("main.py")
         
-    if st.button("Configurações", width='stretch'):
-        st.session_state["origem_config"] = "pages/3_Inserção_Banco.py"
-        st.switch_page("pages/9_Configuracoes.py")
+    st.divider()
+    st.caption("Confirmação final e persistência dos dados validados.")
 
-st.title("Inserção no Banco de Dados")
+st.title("Inserção de Dados")
+st.markdown("Confirmação e gravação das transações no banco de dados.")
+
 st.divider()
 
 if "fila_arquivos" not in st.session_state or not st.session_state["fila_arquivos"]:
-    st.warning("Fila de arquivos vazia.")
-    if st.button("Voltar para Início", type="primary"):
+    st.info("Não há arquivos na fila de processamento.")
+    if st.button("Voltar para Upload", type="primary"):
         st.switch_page("main.py")
     st.stop()
 
 arquivo_atual = None
-
 idx_atual = 0
 
 for i, f in enumerate(st.session_state["fila_arquivos"]):
@@ -69,10 +62,11 @@ for i, f in enumerate(st.session_state["fila_arquivos"]):
         break
 
 if arquivo_atual is None:
-    st.success("Todos os arquivos válidos foram processados!")
+    st.success("Todos os arquivos válidos foram processados.")
     
     col1, col2 = st.columns(2)
     with col1:
+        # Aqui mantemos a limpeza da fila, pois o processo acabou
         if st.button("Voltar para Início", width='stretch'):
             st.session_state["fila_arquivos"] = []
             st.switch_page("main.py")
@@ -82,8 +76,14 @@ if arquivo_atual is None:
     st.stop()
 
 total_files = len(st.session_state["fila_arquivos"])
-st.subheader(f"Arquivo {idx_atual + 1} de {total_files}: {arquivo_atual.nome}")
-st.progress(idx_atual / total_files)
+
+with st.container(border=True):
+    col_meta1, col_meta2 = st.columns([1, 2])
+    col_meta1.metric("Arquivo Atual", f"{idx_atual + 1} de {total_files}")
+    col_meta2.metric("Nome do Arquivo", arquivo_atual.nome)
+    st.progress(idx_atual / total_files)
+
+st.markdown("###")
 
 if arquivo_atual.status == "CONCLUIDO":
     st.success(f"Processamento finalizado para: {arquivo_atual.nome}")
@@ -94,9 +94,9 @@ if arquivo_atual.status == "CONCLUIDO":
     dup = arquivo_atual.resultado_insercao.get("registros_duplicados", 0)
     
     if ins == 0 and dup == 0:
-        st.error("Atenção: Nenhum registro foi inserido. Isso indica falha crítica.")
-        if st.button("Voltar para Correção IA", type="primary", width='stretch'):
-            preparar_retorno_ia(arquivo_atual, "Nenhum registro inserido (Rejeição Total)")
+        st.error("Nenhum registro foi inserido. Isso indica uma falha na operação.")
+        if st.button("Solicitar Correção à IA", type="primary", width='stretch'):
+            preparar_retorno_ia(arquivo_atual, "Nenhum registro inserido (Rejeição Total pelo Banco)")
     
     else:
         if st.button("Próximo Arquivo", type="primary", width='stretch'):
@@ -106,28 +106,33 @@ if arquivo_atual.status == "CONCLUIDO":
 else:
     df_final = arquivo_atual.df_corrigido if arquivo_atual.df_corrigido is not None else arquivo_atual.df_original
     
-    exibir_preview(df_final)
+    with st.expander("Visualizar Preview dos Dados a Inserir", expanded=True):
+        exibir_preview(df_final)
     
+    st.markdown("###")
+
     if st.session_state.get("erro_insercao_critico"):
-        st.error(f"Falha Crítica na inserção: {st.session_state.get('erro_insercao_msg')}")
-        
-        c_retry1, c_retry2 = st.columns(2)
-        with c_retry1:
-            if st.button("Tentar Inserir Novamente", width='stretch'):
-                del st.session_state["erro_insercao_critico"]
-                st.rerun()
-        with c_retry2:
-            if st.button("Voltar para Correção IA", type="primary", width='stretch'):
-                preparar_retorno_ia(arquivo_atual, st.session_state.get("erro_insercao_msg"))
+        with st.container(border=True):
+            st.error(f"Falha Crítica na Inserção: {st.session_state.get('erro_insercao_msg')}")
+            
+            c_retry1, c_retry2 = st.columns(2)
+            with c_retry1:
+                if st.button("Tentar Novamente", width='stretch'):
+                    del st.session_state["erro_insercao_critico"]
+                    st.rerun()
+            with c_retry2:
+                if st.button("Solicitar Correção à IA", type="primary", width='stretch'):
+                    preparar_retorno_ia(arquivo_atual, st.session_state.get("erro_insercao_msg"))
     
     else:
-        st.warning("Esta ação irá escrever os dados no banco de dados.")
+        # Texto alterado conforme solicitado (persisitir -> gravar)
+        st.warning("Atenção: A ação abaixo irá gravar os dados no banco de dados.")
         
         col_act1, col_act2 = st.columns([3, 1])
         
         with col_act1:
             if st.button("Confirmar Inserção", type="primary", width='stretch'):
-                with st.status("Inserindo registros...", expanded=False) as status:
+                with st.status("Gravando dados no banco...", expanded=False) as status:
                     try:
                         inicio = time.time()
                         
@@ -137,7 +142,16 @@ else:
                         fim = time.time()
                         duracao = fim - inicio
 
+                        resultado["nome_arquivo"] = arquivo_atual.nome
                         
+                        origem_script = "Não utilizado"
+                        if arquivo_atual.fonte_correcao == "IA":
+                             origem_script = "IA"
+                        elif arquivo_atual.fonte_correcao == "CACHE":
+                             origem_script = "Cache"
+                        
+                        resultado["origem_script"] = origem_script
+
                         inicio_real = getattr(arquivo_atual, "timestamp_upload", inicio)
                         duracao_total = fim - inicio_real
                         
@@ -145,7 +159,7 @@ else:
                         total_duplicados = resultado.get("registros_duplicados", 0)
                         total_erros = len(resultado.get("erros", []))
 
-                        usou_ia = True if arquivo_atual.status == "IA" else False
+                        usou_ia = True if origem_script == "IA" else False
                         script_id = getattr(arquivo_atual, 'script_id', None)
 
                         registrar_log_ingestao(
@@ -162,7 +176,6 @@ else:
                             msg = str(resultado["erros"][0])
                             arquivo_atual.logger.registrar_erro("INSERCAO", "Falha Total", msg)
                             arquivo_atual.finalizar_insercao(resultado, duracao)
-                            arquivo_atual.logger.registrar_erro("INSERCAO", "Rejeição em Lote", "Nenhum registro aceito")
                             
                             st.session_state["erro_insercao_critico"] = True
                             st.session_state["erro_insercao_msg"] = msg
@@ -170,11 +183,11 @@ else:
                                 
                         else:
                             arquivo_atual.finalizar_insercao(resultado, duracao)
-                            status.update(label="Concluído!", state="complete")
+                            status.update(label="Concluído", state="complete")
                             st.rerun()
                         
                     except Exception as e:
-                        status.update(label="Erro crítico!", state="error")
+                        status.update(label="Erro crítico", state="error")
                         arquivo_atual.logger.registrar_erro("INSERCAO", "Exception", str(e))
                         
                         st.session_state["erro_insercao_critico"] = True
@@ -182,7 +195,7 @@ else:
                         st.rerun()
 
         with col_act2:
-            if st.button("Pular", width='stretch'):
+            if st.button("Pular Arquivo", type="secondary", width='stretch'):
                 arquivo_atual.status = "CANCELADO"
                 arquivo_atual.logger.registrar_cancelamento()
                 st.rerun()
