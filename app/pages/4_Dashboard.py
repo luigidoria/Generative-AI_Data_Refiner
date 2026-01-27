@@ -10,32 +10,25 @@ from app.services.logger import carregar_dados
 from services.auth_manager import AuthManager
 
 st.set_page_config(
-    page_title="Franq | Dashboard",
-    page_icon=":bar_chart:",
+    page_title="Dashboard",
     layout="wide"
 )
-
-auth = AuthManager()
-auth.verificar_autenticacao()
 
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] { display: none; }
+        footer {visibility: hidden;}
+        .block-container {padding-top: 2rem;}
     </style>
 """, unsafe_allow_html=True)
+
+auth = AuthManager()
+auth.verificar_autenticacao()
 
 st.header("Dashboard de Monitoramento")
 
 with st.sidebar:
-    st.markdown("""
-    **Como funciona:**
-    1. Suba o arquivo CSV.
-    2. O sistema valida os dados.
-    3. A IA corrige erros automaticamente.
-    4. Dados corrigidos são inseridos no banco.
-    """)
-
-    st.divider()
+    st.header("Navegação")
 
     origem_atual = st.session_state.get("origem_dashboard", "main.py")
     
@@ -50,6 +43,13 @@ with st.sidebar:
 
     if st.button(texto_botao, width='stretch'):
         st.switch_page(origem_atual)
+    
+    if st.button("Configurações", width='stretch'):
+        st.session_state["origem_config"] = "pages/4_Dashboard.py"
+        st.switch_page("pages/9_Configuracoes.py")
+        
+    st.divider()
+    st.caption("Visão analítica do processamento de arquivos.")
 
 st.markdown("Visão geral da eficiência do processamento e custos.")
 st.divider()
@@ -71,121 +71,168 @@ taxa_cache = (qtd_cache / total_arquivos * 100) if total_arquivos > 0 else 0
 
 tokens_economizados = df['tokens_economizados'].sum()   
 
-kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+with st.container(border=True):
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
 
-with kpi1:
-    st.metric("Arquivos Processados", total_arquivos, delta=f"{taxa_sucesso:.1f}% Sucesso")
-with kpi2:
-    st.metric("Total Tokens Gastos", f"{total_tokens:,.0f}".replace(",", "."))
-with kpi3:
-    st.metric("Uso do Cache", f"{qtd_cache}", delta=f"{taxa_cache:.1f}% do Total")
-with kpi4:
-    st.metric("Tokens Economizados", f"{tokens_economizados:,.0f}".replace(",", "."))
+    with kpi1:
+        st.metric("Arquivos Processados", total_arquivos, delta=f"{taxa_sucesso:.1f}% Sucesso")
+    with kpi2:
+        st.metric("Total Tokens Gastos", f"{total_tokens:,.0f}".replace(",", "."))
+    with kpi3:
+        st.metric("Uso do Cache", f"{qtd_cache}", delta=f"{taxa_cache:.1f}% do Total")
+    with kpi4:
+        st.metric("Tokens Economizados", f"{tokens_economizados:,.0f}".replace(",", "."))
 
-st.divider()
+st.markdown("###")
 
 col_graf1, col_graf2 = st.columns([1, 1])
 
 with col_graf1:
-    st.subheader("IA vs Cache")
-    df_origem = df['origem_correcao'].value_counts().reset_index()
-    df_origem.columns = ['Origem', 'Total']
-    
-    fig_pizza = px.pie(
-        df_origem, 
-        values='Total', 
-        names='Origem', 
-        hole=0.4,
-        color='Origem',
-        color_discrete_map={'IA': '#FF6B6B', 'CACHE': '#4ECDC4', 'NENHUMA': '#FFE66D'}
-    )
-    st.plotly_chart(fig_pizza, width='stretch')
+    with st.container(border=True):
+        st.subheader("Distribuição por Origem")
+        df_origem = df['origem_correcao'].value_counts().reset_index()
+        df_origem.columns = ['Origem', 'Total']
+        
+        df_origem['Origem'] = df_origem['Origem'].replace({'NENHUMA': 'Sem Correção', 'CACHE': 'Cache'})
+        
+        fig_pizza = px.pie(
+            df_origem, 
+            values='Total', 
+            names='Origem', 
+            hole=0.4,
+            color='Origem',
+            color_discrete_map={'IA': '#FF6B6B', 'Cache': '#4ECDC4', 'Sem Correção': '#FFE66D'},
+            height=350 
+        )
+        st.plotly_chart(fig_pizza, width='stretch')
 
 with col_graf2:
-    st.subheader("Consumo Diário")
-    df['data'] = df['created_at'].dt.date
-    df_diario = df.groupby('data')['tokens_gastos'].sum()
-    
-    st.bar_chart(df_diario, color="#4ECDC4")
+    with st.container(border=True):
+        st.subheader("Consumo vs Economia Diária")
+        
+        # Ajuste para agrupar por data
+        df['data_obj'] = df['created_at'].dt.date
+        
+        # Agrupamos somando tanto gastos quanto economizados
+        df_diario = df.groupby('data_obj')[['tokens_gastos', 'tokens_economizados']].sum().reset_index()
+        
+        # Renomeia para ficar bonito na legenda
+        df_diario.columns = ['Data', 'Gastos (IA)', 'Economizados (Cache)']
+        
+        # Formata a data
+        df_diario['Data_Formatada'] = df_diario['Data'].apply(lambda x: x.strftime('%d/%m/%Y'))
+        
+        # Cria o gráfico passando uma lista no eixo Y para criar o agrupamento
+        fig_bar = px.bar(
+            df_diario,
+            x='Data_Formatada',
+            y=['Gastos (IA)', 'Economizados (Cache)'], # Duas colunas aqui cria o agrupamento
+            barmode='group', # Coloca lado a lado
+            height=350,
+            color_discrete_map={ # Mantém consistência com o gráfico de pizza
+                'Gastos (IA)': '#FF6B6B', 
+                'Economizados (Cache)': '#4ECDC4'
+            }
+        )
+        
+        # Ajustes visuais finos
+        fig_bar.update_traces(
+            width=0.35, # Largura das barras (como são duas, menor que 0.5 fica melhor)
+        )
+        
+        fig_bar.update_layout(
+            xaxis_title="Data",
+            yaxis_title="Qtd. Tokens",
+            legend_title="Tipo",
+            legend=dict(
+                orientation="h", # Legenda horizontal no topo para economizar espaço vertical
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1
+            )
+        )
+        
+        st.plotly_chart(fig_bar, width='stretch')
 
 col_graf3, col_graf4 = st.columns([1, 1])
 
 with col_graf3:
-    st.subheader("Tentativas da IA")
-    st.caption("Frequência de tentativas necessárias por arquivo")
-    
-    df_ia = df[df['origem_correcao'] == 'IA']
-    
-    if not df_ia.empty:
-        contagem = df_ia['tentativas_ia'].value_counts().reset_index()
-        contagem.columns = ['Tentativas', 'Quantidade']
+    with st.container(border=True):
+        st.subheader("Eficiência da IA")
+        st.caption("Tentativas necessárias para correção")
         
-        fig = px.bar(
-            contagem, 
-            x='Tentativas', 
-            y='Quantidade',
-            text_auto=True,
-            color_discrete_sequence=['#FF9F43']
-        )
+        df_ia = df[df['origem_correcao'] == 'IA']
         
-        fig.update_layout(
-            xaxis=dict(
-                tickmode='linear',
-                tick0=1,
-                dtick=1
-            ),
-            bargap=0.2
-        )
-        
-        fig.update_traces(width=0.3)         
-        st.plotly_chart(fig, width='stretch')
-    else:
-        st.info("Sem dados de uso de IA para gerar histograma.")
+        if not df_ia.empty:
+            contagem = df_ia['tentativas_ia'].value_counts().reset_index()
+            contagem.columns = ['Tentativas', 'Quantidade']
+            
+            fig = px.bar(
+                contagem, 
+                x='Tentativas', 
+                y='Quantidade',
+                text_auto=True,
+                color_discrete_sequence=['#FF9F43'],
+                height=350
+            )
+            
+            fig.update_layout(
+                xaxis=dict(tickmode='linear', tick0=1, dtick=1),
+                bargap=0.2
+            )
+            
+            fig.update_traces(width=0.3)         
+            st.plotly_chart(fig, width='stretch')
+        else:
+            st.info("Ainda não há dados suficientes de correções via IA.")
 
 with col_graf4:
-    st.subheader("Registros de Erros")
-    
-    df_erros = df[df['status'] == 'FALHA']
-    
-    if not df_erros.empty:
-        st.dataframe(
-            df_erros[['created_at', 'arquivo_nome', 'etapa_final', 'tipo_erro', 'mensagem_erro']],
-            width='stretch',
-            hide_index=True,
-            column_config={
-                "created_at": st.column_config.DatetimeColumn("Data", format="DD/MM/YYYY HH:mm"),
-                "arquivo_nome": "Arquivo",
-                "etapa_final": "Etapa",
-                "tipo_erro": "Tipo do Erro",
-                "mensagem_erro": st.column_config.TextColumn("Mensagem Detalhada", width="large")
-            }
-        )
-    else:
-        st.success("Nenhum erro registrado!")
-
+    with st.container(border=True):
+        st.subheader("Log de Erros Recentes")
+        st.caption("Últimos registros de falha no sistema")
+        
+        df_erros = df[df['status'] == 'FALHA']
+        
+        if not df_erros.empty:
+            st.dataframe(
+                df_erros[['created_at', 'arquivo_nome', 'mensagem_erro']],
+                width='stretch',
+                height=350,
+                hide_index=True,
+                column_config={
+                    "created_at": st.column_config.DatetimeColumn("Data", format="DD/MM HH:mm"),
+                    "arquivo_nome": "Arquivo",
+                    "mensagem_erro": st.column_config.TextColumn("Erro", width="large")
+                }
+            )
+        else:
+            st.success("Nenhum erro registrado nas últimas operações.")
 
 st.divider()
 st.subheader("Histórico Detalhado")
 
-filtro_status = st.multiselect(
-    "Filtrar Status:", 
-    options=df['status'].unique(),
-    default=df['status'].unique()
-)
+with st.expander("Filtros Avançados", expanded=False):
+    filtro_status = st.multiselect(
+        "Filtrar por Status:", 
+        options=df['status'].unique(),
+        default=df['status'].unique()
+    )
 
 df_filtrado = df[df['status'].isin(filtro_status)]
 
 st.dataframe(
     df_filtrado[[
         'created_at', 'arquivo_nome', 'status', 'origem_correcao', 
-        'tokens_gastos', 'tentativas_ia', 'registros_inseridos'
+        'tokens_gastos', 'tokens_economizados', 'tentativas_ia', 'registros_inseridos'
     ]],
     width='stretch',
     hide_index=True,
     column_config={
-        "created_at": st.column_config.DatetimeColumn("Data", format="DD/MM HH:mm"),
+        "created_at": st.column_config.DatetimeColumn("Data", format="DD/MM/YYYY HH:mm"),
         "tokens_gastos": st.column_config.NumberColumn("Tokens"),
         "tentativas_ia": st.column_config.NumberColumn("Tentativas"),
+        "registros_inseridos": st.column_config.NumberColumn("Inseridos"),
         "status": st.column_config.Column("Status")
     }
 )
