@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.services.insert_data import inserir_transacoes, registrar_log_ingestao
 from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_retorno_ia, ir_para_dashboard
+from services.auth_manager import AuthManager
 
 st.set_page_config(
     page_title="Franq | Inserção no Banco",
@@ -21,6 +22,10 @@ st.markdown("""
         [data-testid="stSidebarNav"] { display: none; }
     </style>
 """, unsafe_allow_html=True)
+
+
+auth = AuthManager()
+auth.verificar_autenticacao()
 
 with st.sidebar:
     st.markdown("""

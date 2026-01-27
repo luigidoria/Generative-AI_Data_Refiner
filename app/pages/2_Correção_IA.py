@@ -13,12 +13,16 @@ from app.utils.ui_components import formatar_titulo_erro
 from app.services.script_cache import salvar_script_cache, buscar_script_cache, gerar_hash_estrutura
 from app.services.ai_code_generator import gerar_codigo_correcao_ia
 from app.utils.data_handler import carregar_template
+from services.auth_manager import AuthManager
 
 st.set_page_config(
     page_title="Franq | Correção IA",
     page_icon=":bar_chart:",
     layout="wide"
 )
+
+auth = AuthManager()
+auth.verificar_autenticacao()
 
 with st.sidebar:
     st.markdown("""

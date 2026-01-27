@@ -6,7 +6,7 @@ from utils.ui_components import formatar_titulo_erro
 from utils.file_session import FileSession
 from services.logger import init_logger_table
 from services.script_cache import init_script_costs_table
-import services.auth_manager as auth_manager
+from services.auth_manager import AuthManager
 
 st.set_page_config(
     page_title="Franq | Ingestão de Dados",
@@ -21,6 +21,9 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
+auth = AuthManager()
+auth.verificar_autenticacao()
 
 if "banco_dados" not in st.session_state:
     init_database()
