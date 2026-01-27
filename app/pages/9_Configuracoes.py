@@ -75,7 +75,7 @@ with st.container(border=True):
             nova_chave = st.text_input("Chave API", type="password", placeholder="gsk_...")
             
         with col_btn:
-            submit = st.form_submit_button("Conectar", type="primary", use_container_width=True)
+            submit = st.form_submit_button("Conectar", type="primary", width='stretch')
 
     if submit:
         if not nova_chave:
@@ -105,5 +105,5 @@ with col_voltar:
     elif "Inserção" in origem: texto_voltar = "Voltar à Inserção"
     elif "Dashboard" in origem: texto_voltar = "Voltar ao Dashboard"
 
-    if st.button(f"{texto_voltar}", use_container_width=True):
+    if st.button(f"{texto_voltar}", width='stretch'):
         st.switch_page(origem)
