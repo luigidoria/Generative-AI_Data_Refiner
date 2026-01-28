@@ -72,9 +72,9 @@ with st.container(border=True):
     progresso = tarefas_concluidas / total_tarefas if total_tarefas > 0 else 0
     st.progress(progresso)
 
-with st.expander("Visualizar Detalhes dos Erros"):
-    for i, erro in enumerate(arquivo_atual.validacao["detalhes"]):
-        st.write(f"- {formatar_titulo_erro(erro.get('tipo'))}")
+    with st.expander("Visualizar Detalhes dos Erros"):
+        for i, erro in enumerate(arquivo_atual.validacao["detalhes"]):
+            st.write(f"- {formatar_titulo_erro(erro.get('tipo'))}")
 
 st.markdown("###")
 
