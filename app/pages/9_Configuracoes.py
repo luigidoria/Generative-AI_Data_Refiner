@@ -18,7 +18,11 @@ st.markdown("""
         [data-testid="stSidebar"] {display: none;}
         [data-testid="collapsedControl"] {display: none;}
         footer {visibility: hidden;}
+        [data-testid="stDeployButton"] {display: none !important;}
+        [data-testid="stMainMenu"] {visibility: hidden !important;}
+        header {background: transparent !important;}
         .block-container {padding-top: 2rem;}
+        .stDeployButton {display: none !important;}
     </style>
 """, unsafe_allow_html=True)
 
