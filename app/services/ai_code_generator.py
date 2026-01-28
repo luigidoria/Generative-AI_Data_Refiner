@@ -69,6 +69,32 @@ def _construir_instrucoes_dinamicas(detalhes_erros):
                 f"Ao final, remova as colunas de origem sobressalentes."
             )
 
+        elif tipo == "valores_invalidos":
+            col = erro.get("coluna")
+            permitidos = erro.get("valores_permitidos", [])
+            mapeamento = erro.get("mapeamento_sugerido", {})
+            default_val = erro.get("default")
+
+            acoes = [
+                f"1. Converta a coluna '{col}' para string, maiusculas e remova espacos (strip/upper)."
+            ]
+            
+            if mapeamento:
+                acoes.append(f"2. Aplique as correcoes conhecidas: df['{col}'] = df['{col}'].replace({json.dumps(mapeamento)})")
+            
+            if default_val:
+                acoes.append(f"3. Preencha valores nulos (NaN) com o padrao '{default_val}'.")
+                acoes.append(
+                    f"4. LIMPEZA FINAL: Qualquer valor que AINDA nao esteja na lista {permitidos} "
+                    f"deve ser substituido pelo padrao '{default_val}'."
+                )
+            else:
+                acoes.append(f"3. Valores nulos ou desconhecidos (fora de {permitidos}) devem ser convertidos para pd.NA (ou None).")
+
+            instrucoes_dados.append(
+                f"PADRONIZACAO DE CONTEUDO ('{col}'):\n   " + "\n   ".join(acoes)
+            )
+
     instrucoes = instrucoes_estrutura + instrucoes_dados
 
     if not instrucoes:
