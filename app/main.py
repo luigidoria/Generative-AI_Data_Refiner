@@ -224,6 +224,30 @@ if st.session_state["fila_arquivos"]:
                                         "Colunas no Arquivo (Origem)": st.column_config.TextColumn("Colunas Conflitantes", width="large"),
                                     }
                                 )
+                            elif tipo_erro == 'valores_invalidos':
+                                col_destino = erro.get("coluna", "Desconhecida")
+                                col_origem = erro.get("coluna_origem", col_destino)
+                                invalidos = erro.get("valores_invalidos", [])
+                                permitidos = erro.get("valores_permitidos", [])
+                                default = erro.get("default", "Nenhum")
+                                
+                                texto_coluna = f"`{col_origem}`"
+                                st.markdown(f"Coluna Afetada: {texto_coluna}")
+                                st.markdown(f"Valores Aceitos: `{', '.join(permitidos)}`")
+                                
+                                if default:
+                                    st.markdown(f"Valor Padrão: `{default}`")
+                                
+                                if invalidos:
+                                    dados_invalidos = [{"Valor Encontrado": str(v)} for v in invalidos[:10]]
+                                    if len(invalidos) > 10:
+                                        dados_invalidos.append({"Valor Encontrado": f"... e mais {len(invalidos)-10} outros"})
+                                    
+                                    st.dataframe(
+                                        pd.DataFrame(dados_invalidos),
+                                        hide_index=True,
+                                        use_container_width=True
+                                    )          
                             else:
                                 st.write(erro)
 
