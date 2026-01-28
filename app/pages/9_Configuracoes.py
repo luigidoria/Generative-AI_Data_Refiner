@@ -56,8 +56,6 @@ with st.container(border=True):
     else:
         st.markdown("O processamento está pausado. Configure a chave de acesso abaixo.")
 
-#st.markdown("###")
-
 with st.container(border=True):
     st.subheader("Nova Credencial")
     
@@ -93,7 +91,6 @@ with st.container(border=True):
                 else:
                     st.error(f"Não foi possível conectar: {msg}")
 
-#st.markdown("###")
 st.divider()
 
 col_vazio, col_voltar = st.columns([4, 1])

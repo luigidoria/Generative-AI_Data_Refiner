@@ -18,8 +18,10 @@ class AuthManager:
         env_key = os.getenv("GROQ_API_KEY")
         
         if env_key:
-            st.session_state["GROQ_API_KEY"] = env_key
-            return env_key
+            valida, _ = self.validar_api_key(env_key)
+            if valida:
+                st.session_state["GROQ_API_KEY"] = env_key
+                return env_key
 
         return None
 
