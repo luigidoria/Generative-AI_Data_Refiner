@@ -180,7 +180,8 @@ else:
             if st.button("Executar e Validar", type="primary", width='stretch'):
                 try:
                     local_ns = {"df": arquivo_atual.df_original.copy(), "pd": pd, "np": np} 
-                    exec(codigo_atual, local_ns)
+                    codigo_compilado = compile(codigo_atual, filename='<script_ia>', mode='exec')
+                    exec(codigo_compilado, local_ns)
                     df_temp = local_ns["df"]
                     
                     st.session_state[session_key_exec] = df_temp
@@ -197,6 +198,10 @@ else:
                         os.remove(tmp_path)
                     
                     st.rerun()
+                except SyntaxError as e:
+                    st.session_state[f"ignore_cache_{arquivo_atual.id}"] = True
+                    st.error(f"Erro de Sintaxe no código gerado: {e.msg} (Linha {e.lineno})")
+                    
                 except Exception as e:
                     st.session_state[f"ignore_cache_{arquivo_atual.id}"] = True
                     st.error(f"Erro de Execução: {e}")

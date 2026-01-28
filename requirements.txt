@@ -34,3 +34,5 @@ python-dotenv>=1.0.0
 
 # Google Gemini (opcional - se escolher usar)
 # google-genai>=1.57.0
+
+plotly
