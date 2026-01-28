@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.validation import validar_csv_completo
-from app.utils.ui_components import formatar_titulo_erro, renderizar_stepper, configurar_estilo_visual
+from app.utils.ui_components import formatar_titulo_erro, renderizar_cabecalho, configurar_estilo_visual
 from app.services.script_cache import salvar_script_cache, buscar_script_cache, gerar_hash_estrutura
 from app.services.ai_code_generator import gerar_codigo_correcao_ia
 from app.utils.data_handler import carregar_template
@@ -35,11 +35,7 @@ with st.sidebar:
     st.divider()
     st.caption("A IA analisará os erros e proporá um script de correção automática.")
 
-#st.title("Correção Inteligente")
-renderizar_stepper(2)
-st.markdown("Revisão e aplicação de correções assistidas por IA.")
-
-st.divider()
+renderizar_cabecalho(2, "Revisão e aplicação de correções assistidas por IA.")
 
 if "fila_arquivos" not in st.session_state or not st.session_state["fila_arquivos"]:
     st.info("Não há arquivos pendentes na fila.")
@@ -167,13 +163,13 @@ else:
     codigo_atual = st.session_state[session_key_code]
     
     with st.container(border=True):
-    
+        st.markdown("#### Correção Automática Pronta")
         if meta["fonte"] == "CACHE":
-            st.markdown(f":green[**Solução via Cache**] (Utilizada {meta.get('vezes_utilizado', 0)} vezes)")
+            st.markdown(f":green[**O sistema reconheceu este tipo de erro e aplicou uma correção validada anteriormente.**] (Esta correção já foi aplicada {meta.get('vezes_utilizado', 0)} vezes)")
         else:
-            st.markdown(":blue[**Solução via IA Generativa**]")
+            st.markdown(":blue[**A Inteligência Artificial analisou os erros e gerou um novo script de correção.**]")
     
-        with st.expander("Visualizar Código Python Gerado", expanded=False):
+        with st.expander("Ver detalhes técnicos da correção (Script Python)", expanded=False):
             st.code(codigo_atual, language="python")
     
     if session_key_exec not in st.session_state:
@@ -221,6 +217,7 @@ else:
 
         if res_valid["valido"]:
             with st.container(border=True):
+                st.markdown("#### Resultado da Validação")
                 st.success("Validação Aprovada")
                 st.markdown("Os dados foram corrigidos e estão compatíveis com o modelo.")
                 
@@ -252,6 +249,7 @@ else:
                     st.rerun()
         else:
             with st.container(border=True):
+                st.markdown("#### Resultado da Validação")
                 st.error(f"Ainda existem {res_valid.get('total_erros', '?')} erro(s) após a execução.")
                 
                 with st.expander("Ver Erros Restantes"):
