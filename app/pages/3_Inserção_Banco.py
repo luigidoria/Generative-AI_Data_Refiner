@@ -8,7 +8,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.services.insert_data import inserir_transacoes, registrar_log_ingestao
-from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_retorno_ia, ir_para_dashboard, renderizar_stepper, configurar_estilo_visual
+from app.utils.ui_components import exibir_preview, exibir_relatorio, preparar_retorno_ia, ir_para_dashboard, renderizar_cabecalho, configurar_estilo_visual, simplificar_msg_erro
 from services.auth_manager import AuthManager
 
 st.set_page_config(
@@ -30,11 +30,8 @@ with st.sidebar:
     st.divider()
     st.caption("Confirmação final e persistência dos dados validados.")
 
-#st.title("Inserção de Dados")
-renderizar_stepper(3)
-st.markdown("Confirmação e gravação das transações no banco de dados.")
+renderizar_cabecalho(3, "Confirmação e gravação das transações no banco de dados.")
 
-st.divider()
 
 if "fila_arquivos" not in st.session_state or not st.session_state["fila_arquivos"]:
     st.info("Não há arquivos na fila de processamento.")
@@ -60,7 +57,6 @@ if arquivo_atual is None:
     
     col1, col2 = st.columns(2)
     with col1:
-        # Aqui mantemos a limpeza da fila, pois o processo acabou
         if st.button("Voltar para Início", width='stretch'):
             st.session_state["fila_arquivos"] = []
             st.switch_page("main.py")
@@ -107,7 +103,8 @@ else:
 
     if st.session_state.get("erro_insercao_critico"):
         with st.container(border=True):
-            st.error(f"Falha Crítica na Inserção: {st.session_state.get('erro_insercao_msg')}")
+            msg_simplificada = simplificar_msg_erro(st.session_state.get("erro_insercao_msg", "Erro desconhecido"))
+            st.error(f"Falha Crítica na Inserção: {msg_simplificada}")
             
             c_retry1, c_retry2 = st.columns(2)
             with c_retry1:
@@ -119,7 +116,6 @@ else:
                     preparar_retorno_ia(arquivo_atual, st.session_state.get("erro_insercao_msg"))
     
     else:
-        # Texto alterado conforme solicitado (persisitir -> gravar)
         st.warning("Atenção: A ação abaixo irá gravar os dados no banco de dados.")
         
         col_act1, col_act2 = st.columns([3, 1])
