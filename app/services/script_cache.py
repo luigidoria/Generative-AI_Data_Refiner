@@ -27,15 +27,37 @@ def init_script_costs_table():
 def gerar_hash_estrutura(colunas: list, erros: list) -> str:
     colunas_ordenadas = sorted(colunas)
     
-    tipos_erros = sorted([erro.get("tipo", "") for erro in erros])
+    assinaturas_erros = []
+    
+    for erro in erros:
+        tipo = erro.get("tipo")
+        assinatura = {"tipo": tipo}
+        
+        if tipo == "nomes_colunas":
+            assinatura["mapeamento"] = erro.get("mapeamento", {})
+            
+        elif tipo == "colunas_duplicadas":
+            assinatura["conflitos"] = erro.get("conflitos", {})
+            
+        elif tipo == "colunas_faltando":
+            assinatura["colunas"] = sorted(erro.get("colunas", []))
+            
+        elif tipo == "valores_invalidos":
+            assinatura["coluna"] = erro.get("coluna")
+            assinatura["mapeamento"] = erro.get("mapeamento_sugerido", {})
+            assinatura["default"] = erro.get("default")
+            assinatura["permitidos"] = sorted(erro.get("valores_permitidos", []))
+            
+        assinaturas_erros.append(assinatura)
+
+    assinaturas_ordenadas = sorted(assinaturas_erros, key=lambda x: json.dumps(x, sort_keys=True))
     
     estrutura = {
         "colunas": colunas_ordenadas,
-        "tipos_erros": tipos_erros
+        "erros_detalhados": assinaturas_ordenadas
     }
     
     estrutura_json = json.dumps(estrutura, sort_keys=True, ensure_ascii=False)
-
     hash_obj = hashlib.md5(estrutura_json.encode('utf-8'))
     
     return hash_obj.hexdigest()
