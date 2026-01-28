@@ -78,11 +78,29 @@ class AuthManager:
             del st.session_state["GROQ_API_KEY"]
 
     def verificar_autenticacao(self):
+
         if not self.api_key:
-            st.warning("Autenticação Necessária")
-            st.markdown("A chave de API não foi encontrada ou foi removida. Configure novamente para continuar.")
+            st.markdown("""
+                <style>
+                    [data-testid="stSidebar"] {display: none;}
+                    [data-testid="collapsedControl"] {display: none;}
+                </style>
+            """, unsafe_allow_html=True)
+            col_spacer1, col_content, col_spacer2 = st.columns([1, 1.5, 1])
             
-            if st.button("Ir para Configurações", type="primary", key="auth_block_btn"):
-                st.switch_page("pages/9_Configuracoes.py")
-            
+            with col_content:
+                st.markdown("<br><br>", unsafe_allow_html=True)
+                
+                with st.container(border=True):
+                    st.markdown("### Sistema de Ingestão Inteligente")
+                    
+                    st.markdown("""
+                    Olá! Para processar, validar e corrigir seus arquivos CSV, 
+                    o sistema precisa habilitar os recursos de Inteligência Artificial.
+                    """)
+                    st.markdown("Clique abaixo para configurar sua credencial segura e liberar o acesso:")
+                    
+                    if st.button("Configurar Acesso Agora", type="primary", width='stretch'):
+                        st.switch_page("pages/9_Configuracoes.py")
+                        
             st.stop()

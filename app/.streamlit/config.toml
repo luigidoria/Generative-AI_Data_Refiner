@@ -1,0 +1,14 @@
+[client]
+showSidebarNavigation = false
+showErrorDetails = false    # Oculta detalhes técnicos de erros para o usuário final
+
+[theme]
+base = "dark"               # Força o modo escuro sempre
+primaryColor = "#5C7CFA" #"#2E8B57"    # Verde SeaGreen (Bom contraste com branco)
+backgroundColor = "#0E1117" # Fundo padrão dark do Streamlit
+secondaryBackgroundColor = "#262730" # Fundo da sidebar/inputs
+textColor = "#FAFAFA"       # Texto quase branco
+font = "sans serif"
+
+[server]
+runOnSave = true

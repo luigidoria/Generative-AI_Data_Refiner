@@ -20,22 +20,19 @@ def exibir_preview(df):
         col3.metric("Valor Total", f"R$ {valor_total:,.2f}")
 
     st.divider()
-    st.subheader("Preview dos Dados")
-    st.info("Revise os dados abaixo antes de confirmar a inserção.")
+    st.caption("Visualização completa dos dados (role para ver mais):")
 
     st.dataframe(
-        df.head(10),
+        df,
         width='stretch',
+        height=400,
         hide_index=True,
         column_config={
             "valor": st.column_config.NumberColumn(
                 "Valor", format="R$ %.2f"
             )
         }
-    )
-    
-    if len(df) > 10:
-        st.caption(f"Mostrando 10 de {len(df)} registros.")
+    )    
     st.divider()
 
 def exibir_relatorio(resultado, duracao):
@@ -62,7 +59,10 @@ def exibir_relatorio(resultado, duracao):
 
     c4, c5, c6 = st.columns(3)
     c4.metric("Arquivo", resultado.get("nome_arquivo", "N/A"))
-    c5.metric("Script IA", "Utilizado" if resultado.get("usou_ia", False) else "Não utilizado")
+    
+    origem_script = resultado.get("origem_script", "Não utilizado")
+    c5.metric("Origem do Script", origem_script)
+    
     c6.metric("Tempo", f"{duracao:.2f}s")
 
     st.divider()
@@ -100,3 +100,60 @@ def ir_para_dashboard():
     st.session_state["fila_arquivos"] = []
     st.session_state["pagina_anterior"] = "main.py"
     st.switch_page("pages/4_Dashboard.py")
+
+def renderizar_cabecalho(etapa_atual, texto_explicativo=None):
+    #st.markdown("###")
+    st.title("Portal de Ingestão")
+    passos = {
+        1: "Upload & Validação",
+        2: "Correção via IA",
+        3: "Inserção no Banco"
+    }
+    
+    with st.container():
+        cols = st.columns(3, gap="small")    
+        for i, col in enumerate(cols, 1):
+            with col:
+                if i == etapa_atual:
+                    st.markdown(f"#### :blue[{i}. {passos[i]}]")
+                    st.progress(100)
+                elif i < etapa_atual:
+                    st.markdown(f"**{i}. {passos[i]}**")
+                    st.progress(100)
+                else:
+                    st.markdown(f":grey[{i}. {passos[i]}]")
+    
+    if texto_explicativo:
+        st.markdown(texto_explicativo)
+        
+        st.divider()
+
+def configurar_estilo_visual():
+    st.markdown("""
+        <style>
+            [data-testid="stSidebarNav"] {display: none;}
+            footer {visibility: hidden;}
+            .block-container {padding-top: 2rem;}
+            .stDeployButton {display: none !important;}
+            [data-testid="stDeployButton"] {display: none !important;}
+            [data-testid="stMainMenu"] {visibility: hidden !important;}
+            header {background: transparent !important;}
+        </style>
+    """, unsafe_allow_html=True)
+
+def simplificar_msg_erro(msg_tecnica):
+    msg = str(msg_tecnica).lower()
+    
+    if "primary key" in msg or "unique constraint" in msg or "duplicado" in msg:
+        return "Tentativa de inserir uma transação que já existe no sistema (ID duplicado)."
+    
+    if "foreign key" in msg:
+        return "A conta ou categoria informada não está cadastrada no sistema."
+        
+    if "syntax error" in msg:
+        return "Erro interno no processamento do arquivo. Tente novamente."
+        
+    if "could not convert" in msg or "value error" in msg:
+        return "O arquivo contém dados em formato incorreto (texto onde deveria ser número)."
+        
+    return f"Erro no processamento: {msg_tecnica}"

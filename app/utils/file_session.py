@@ -20,6 +20,7 @@ class FileSession:
         self.cache_verificado = False
         self.resultado_insercao = None
         self.relatorio_visualizado = False
+        self.fonte_correcao = None 
         
         self.logger = LogMonitoramento(uploaded_file) 
 
@@ -41,6 +42,7 @@ class FileSession:
             raise e
 
     def update_ia_stats(self, tokens, fonte, economia=0):
+        self.fonte_correcao = fonte
         self.logger.registrar_uso_ia(tokens, fonte, economia)
         
     def finalizar_insercao(self, resultado_dict, duracao):
@@ -55,8 +57,7 @@ class FileSession:
         self.resultado_insercao["duracao"] = duracao
         
         self.resultado_insercao["nome_arquivo"] = self.nome
-        origem = self.logger.dados.get("origem_correcao", "NENHUMA")
-        self.resultado_insercao["usou_ia"] = origem in ["IA", "CACHE"]
+        self.resultado_insercao["usou_ia"] = (self.fonte_correcao == "IA")
         
         self.status = "CONCLUIDO"
 
