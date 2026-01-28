@@ -101,7 +101,7 @@ def ir_para_dashboard():
     st.session_state["pagina_anterior"] = "main.py"
     st.switch_page("pages/4_Dashboard.py")
 
-def renderizar_stepper(etapa_atual):
+def renderizar_cabecalho(etapa_atual, texto_explicativo=None):
     #st.markdown("###")
     st.title("Portal de Ingestão")
     passos = {
@@ -122,6 +122,9 @@ def renderizar_stepper(etapa_atual):
                     st.progress(100)
                 else:
                     st.markdown(f":grey[{i}. {passos[i]}]")
+    
+    if texto_explicativo:
+        st.markdown(texto_explicativo)
         
         st.divider()
 
@@ -137,3 +140,20 @@ def configurar_estilo_visual():
             header {background: transparent !important;}
         </style>
     """, unsafe_allow_html=True)
+
+def simplificar_msg_erro(msg_tecnica):
+    msg = str(msg_tecnica).lower()
+    
+    if "primary key" in msg or "unique constraint" in msg or "duplicado" in msg:
+        return "Tentativa de inserir uma transação que já existe no sistema (ID duplicado)."
+    
+    if "foreign key" in msg:
+        return "A conta ou categoria informada não está cadastrada no sistema."
+        
+    if "syntax error" in msg:
+        return "Erro interno no processamento do arquivo. Tente novamente."
+        
+    if "could not convert" in msg or "value error" in msg:
+        return "O arquivo contém dados em formato incorreto (texto onde deveria ser número)."
+        
+    return f"Erro no processamento: {msg_tecnica}"
