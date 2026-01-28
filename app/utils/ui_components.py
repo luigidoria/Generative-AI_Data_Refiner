@@ -115,7 +115,7 @@ def renderizar_cabecalho(etapa_atual, texto_explicativo=None):
         for i, col in enumerate(cols, 1):
             with col:
                 if i == etapa_atual:
-                    st.markdown(f"#### :green[{i}. {passos[i]}]")
+                    st.markdown(f"#### :blue[{i}. {passos[i]}]")
                     st.progress(100)
                 elif i < etapa_atual:
                     st.markdown(f"**{i}. {passos[i]}**")

@@ -10,6 +10,17 @@ from app.services.logger import carregar_dados
 from services.auth_manager import AuthManager
 from app.utils.ui_components import configurar_estilo_visual, simplificar_msg_erro
 
+CORES = {
+    "IA": "#5C7CFA",            
+    "CACHE": "#10B981",
+    "Cache": "#10B981",         
+    "NENHUMA": "#94A3B8",
+    "Nenhuma": "#94A3B8",       
+    "Sem Correção": "#94A3B8",  
+    "Gastos (IA)": "#5C7CFA",   
+    "Economizados (Cache)": "#10B981"
+}
+
 st.set_page_config(
     page_title="Dashboard",
     layout="wide"
@@ -96,7 +107,7 @@ with col_graf1:
             names='Origem', 
             hole=0.4,
             color='Origem',
-            color_discrete_map={'IA': '#FF6B6B', 'Cache': '#4ECDC4', 'Sem Correção': '#FFE66D'},
+            color_discrete_map=CORES,
             height=350 
         )
         st.plotly_chart(fig_pizza, width='stretch')
@@ -119,10 +130,7 @@ with col_graf2:
             y=['Gastos (IA)', 'Economizados (Cache)'], 
             barmode='group', 
             height=350,
-            color_discrete_map={ 
-                'Gastos (IA)': '#FF6B6B', 
-                'Economizados (Cache)': '#4ECDC4'
-            }
+            color_discrete_map=CORES
         )
         
         fig_bar.update_traces(
@@ -152,7 +160,6 @@ with col_graf3:
         st.caption("Tentativas necessárias para correção")
         
         df_ia = df[df['origem_correcao'] == 'IA']
-        
         if not df_ia.empty:
             contagem = df_ia['tentativas_ia'].value_counts().reset_index()
             contagem.columns = ['Tentativas', 'Quantidade']
@@ -162,7 +169,7 @@ with col_graf3:
                 x='Tentativas', 
                 y='Quantidade',
                 text_auto=True,
-                color_discrete_sequence=['#FF9F43'],
+                color_discrete_sequence=[CORES["IA"]],
                 height=350
             )
             
