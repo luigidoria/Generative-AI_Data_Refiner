@@ -65,7 +65,7 @@ TRX-877-2025,2025-10-23,89.90,DEBITO,LIVRARIA,Livro de dados,CC-19555,,CONFIRMAD
         data=csv_exemplo,
         file_name="modelo_importacao.csv",
         mime="text/csv",
-        use_container_width=True,
+        width='stretch',
         help="Baixe este arquivo para ver quais colunas são obrigatórias."
     )
 
@@ -208,6 +208,22 @@ if st.session_state["fila_arquivos"]:
                                 colunas = erro.get("colunas", [])
                                 st.markdown(f"Colunas ausentes: `{', '.join(colunas)}`")
 
+                            elif tipo_erro == 'colunas_duplicadas':
+                                conflitos = erro.get("conflitos", {})                                
+                                dados_conflito = [
+                                    {"Campo Esperado (Destino)": dest, "Colunas no Arquivo (Origem)": ", ".join(origs)}
+                                    for dest, origs in conflitos.items()
+                                ]
+                                df_conflito = pd.DataFrame(dados_conflito)
+                                st.dataframe(
+                                    df_conflito, 
+                                    hide_index=True,
+                                    width='stretch',
+                                    column_config={
+                                        "Campo Esperado (Destino)": st.column_config.TextColumn("Campo Final", width="medium"),
+                                        "Colunas no Arquivo (Origem)": st.column_config.TextColumn("Colunas Conflitantes", width="large"),
+                                    }
+                                )
                             else:
                                 st.write(erro)
 
