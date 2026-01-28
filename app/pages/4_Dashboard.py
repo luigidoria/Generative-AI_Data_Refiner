@@ -66,13 +66,15 @@ if df.empty:
     st.warning("Nenhum dado registrado ainda. Processe alguns arquivos para ver as métricas!")
     st.stop()
 
-total_arquivos = len(df)
-total_sucesso = len(df[df['status'] == 'CONCLUIDO'])
+df_kpis = df[df['status'] != 'PENDENTE']
+
+total_arquivos = len(df_kpis)
+total_sucesso = len(df_kpis[df_kpis['status'] == 'CONCLUIDO'])
 taxa_sucesso = (total_sucesso / total_arquivos * 100) if total_arquivos > 0 else 0
 
 total_tokens = df['tokens_gastos'].sum()
 
-qtd_cache = len(df[df['origem_correcao'] == 'CACHE'])
+qtd_cache = len(df_kpis[df_kpis['origem_correcao'] == 'CACHE'])
 taxa_cache = (qtd_cache / total_arquivos * 100) if total_arquivos > 0 else 0
 
 tokens_economizados = df['tokens_economizados'].sum()   
@@ -91,12 +93,14 @@ with st.container(border=True):
 
 st.markdown("###")
 
+df_graficos = df[df['status'] == 'CONCLUIDO'].copy()
+
 col_graf1, col_graf2 = st.columns([1, 1])
 
 with col_graf1:
     with st.container(border=True):
         st.subheader("Distribuição por Origem")
-        df_origem = df['origem_correcao'].value_counts().reset_index()
+        df_origem = df_graficos['origem_correcao'].value_counts().reset_index()
         df_origem.columns = ['Origem', 'Total']
         
         df_origem['Origem'] = df_origem['Origem'].replace({'NENHUMA': 'Sem Correção', 'CACHE': 'Cache'})
@@ -116,9 +120,9 @@ with col_graf2:
     with st.container(border=True):
         st.subheader("Consumo vs Economia Diária")
         
-        df['data_obj'] = df['created_at'].dt.date
+        df_graficos['data_obj'] = df_graficos['created_at'].dt.date
         
-        df_diario = df.groupby('data_obj')[['tokens_gastos', 'tokens_economizados']].sum().reset_index()
+        df_diario = df_graficos.groupby('data_obj')[['tokens_gastos', 'tokens_economizados']].sum().reset_index()
         
         df_diario.columns = ['Data', 'Gastos (IA)', 'Economizados (Cache)']
         
@@ -159,7 +163,7 @@ with col_graf3:
         st.subheader("Eficiência da IA")
         st.caption("Tentativas necessárias para correção")
         
-        df_ia = df[df['origem_correcao'] == 'IA']
+        df_ia = df_graficos[df_graficos['origem_correcao'] == 'IA']
         if not df_ia.empty:
             contagem = df_ia['tentativas_ia'].value_counts().reset_index()
             contagem.columns = ['Tentativas', 'Quantidade']
@@ -178,7 +182,7 @@ with col_graf3:
                 bargap=0.2
             )
             
-            fig.update_traces(width=0.3)         
+            fig.update_traces(width=0.3)        
             st.plotly_chart(fig, width='stretch')
         else:
             st.info("Ainda não há dados suficientes de correções via IA.")

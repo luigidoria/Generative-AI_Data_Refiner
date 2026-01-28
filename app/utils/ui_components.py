@@ -6,7 +6,9 @@ def formatar_titulo_erro(tipo_erro):
         'nomes_colunas': 'Nomes das Colunas Incorretos',
         'formato_valor': 'Formato de Valor Monetário Inválido',
         'formato_data': 'Formato de Data Inválido',
-        'colunas_faltando': 'Colunas Obrigatórias Ausentes'
+        'colunas_faltando': 'Colunas Obrigatórias Ausentes',
+        'colunas_duplicadas': 'Múltiplas colunas referem-se ao mesmo campo final.',
+        'valores_invalidos': 'Valores Inválidos na Coluna'
     }
     return titulos.get(tipo_erro, 'Erro de Validação')
 

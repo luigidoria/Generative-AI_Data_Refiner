@@ -14,6 +14,12 @@ def _construir_instrucoes_dinamicas(detalhes_erros):
     instrucoes_estrutura = []
     instrucoes_dados = []
     
+    destinos_conflitantes = set()
+    for erro in detalhes_erros:
+        if erro.get("tipo") == "colunas_duplicadas":
+            conflitos = erro.get("conflitos", {})
+            destinos_conflitantes.update(conflitos.keys())
+
     for erro in detalhes_erros:
         tipo = erro.get("tipo")
         
@@ -27,9 +33,14 @@ def _construir_instrucoes_dinamicas(detalhes_erros):
             
         elif tipo == "nomes_colunas":
             mapeamento = erro.get("mapeamento", {})
-            if mapeamento:
+            mapeamento_seguro = {
+                orig: dest for orig, dest in mapeamento.items() 
+                if dest not in destinos_conflitantes
+            }
+            
+            if mapeamento_seguro:
                 instrucoes_estrutura.append(
-                    f"RENOMEACAO: As colunas estao incorretas. Use examente este mapeamento no rename: {json.dumps(mapeamento)}. "
+                    f"RENOMEACAO: As colunas estao incorretas. Use examente este mapeamento no rename: {json.dumps(mapeamento_seguro)}. "
                     f"IMPORTANTE: Se uma coluna de destino ja existir no DF, remova-a (drop) ANTES de renomear para evitar colunas duplicadas com o mesmo nome."
                 )
         
@@ -46,8 +57,43 @@ def _construir_instrucoes_dinamicas(detalhes_erros):
                 "Depois converta para o formato 'YYYY-MM-DD' com .dt.strftime('%Y-%m-%d')."
             )
             
-        elif tipo == "duplicatas":
-            instrucoes_dados.append("DUPLICATAS: Remova linhas duplicadas mantendo a primeira ocorrencia (df.drop_duplicates()).")
+        elif tipo == "colunas_duplicadas":
+            conflitos = erro.get("conflitos", {})
+            resumo_conflitos = "; ".join([f"{origens} > '{dest}'" for dest, origens in conflitos.items()])
+            
+            instrucoes_estrutura.append(
+                f"CONFLITO DE COLUNAS: Existem disputas de mapeamento: [{resumo_conflitos}]. "
+                f"Resolva usando COALESCE: Mantenha os valores da coluna de destino como prioritarios. "
+                f"Use as colunas de origem APENAS para preencher lacunas (fillna) na destino. "
+                f"IMPORTANTE: NAO remova colunas extras no inicio do script se elas forem usadas aqui. "
+                f"Ao final, remova as colunas de origem sobressalentes."
+            )
+
+        elif tipo == "valores_invalidos":
+            col = erro.get("coluna")
+            permitidos = erro.get("valores_permitidos", [])
+            mapeamento = erro.get("mapeamento_sugerido", {})
+            default_val = erro.get("default")
+
+            acoes = [
+                f"1. Converta a coluna '{col}' para string, maiusculas e remova espacos (strip/upper)."
+            ]
+            
+            if mapeamento:
+                acoes.append(f"2. Aplique as correcoes conhecidas: df['{col}'] = df['{col}'].replace({json.dumps(mapeamento)})")
+            
+            if default_val:
+                acoes.append(f"3. Preencha valores nulos (NaN) com o padrao '{default_val}'.")
+                acoes.append(
+                    f"4. LIMPEZA FINAL: Qualquer valor que AINDA nao esteja na lista {permitidos} "
+                    f"deve ser substituido pelo padrao '{default_val}'."
+                )
+            else:
+                acoes.append(f"3. Valores nulos ou desconhecidos (fora de {permitidos}) devem ser convertidos para pd.NA (ou None).")
+
+            instrucoes_dados.append(
+                f"PADRONIZACAO DE CONTEUDO ('{col}'):\n   " + "\n   ".join(acoes)
+            )
 
     instrucoes = instrucoes_estrutura + instrucoes_dados
 
@@ -118,9 +164,9 @@ def gerar_codigo_correcao_ia(df, resultado_validacao, ignorar_cache=False):
     {instrucoes_especificas}
 
     REGRAS GERAIS:
-    1. Sempre remova colunas extras que nao estejam no template: {list(template["colunas"].keys())}.
+    1. Apenas remova colunas extras que nao estejam no template {list(template["colunas"].keys())} APOS realizar todas as correcoes de dados (merges, renames, etc), no final do script.
     2. O codigo deve assumir que 'df' e 'pd' ja existem.
-    3. NAO use blocos markdown (```python). Retorne apenas o codigo.
+    3. NAO use blocos markdown. Retorne apenas o codigo.
     4. Se precisar de regex, importe 're'. Se precisar de numpy, importe 'numpy as np'.
     5. GARANTIA FINAL: Apos todas as transformacoes, execute df = df.loc[:, ~df.columns.duplicated()] para garantir que nao existam colunas com nomes duplicados.
     6. A saida final deve ser a alteracao do dataframe `df`.
