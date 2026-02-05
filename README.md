@@ -1,8 +1,6 @@
 Markdown
 
-# Desafio Técnico: Pipeline de Ingestão CSV com IA
-
-Solução desenvolvida para o desafio de automação e ingestão de dados financeiros utilizando Python e Streamlit. O sistema utiliza Inteligência Artificial para gerar scripts de correção automática de arquivos CSV com problemas de formatação, implementando um sistema de cache inteligente para evitar chamadas desnecessárias à API.
+# Generative AI Data Refiner
 
 ## Índice
 
