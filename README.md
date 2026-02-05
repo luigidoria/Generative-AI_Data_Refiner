@@ -484,7 +484,7 @@ A combinação dessas decisões cria um sistema que:
 ## Estrutura do Projeto
 
 ```text
-Desafio_Franq/
+Generative_AI_Data_Refiner/
 ├── app/                          # Aplicação Streamlit
 │   ├── main.py                   # Página principal (Upload)
 │   ├── pages/                    # Páginas da aplicação
